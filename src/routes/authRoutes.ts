@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signup, login } from "../auth/authController";
+import { signup, login, verifyOtp } from "../auth/authController";
 import { verifyToken, requireRoles } from "../auth/middleware";
 import { tokenBlocklist } from "../auth/tokenBlocklist";
 
@@ -8,7 +8,7 @@ const router = Router();
 // Public
 router.post("/signup", signup);
 router.post("/login", login);
-
+router.post("/verify-otp", verifyOtp); 
 // Protected (any logged-in user)
 router.get("/me", verifyToken, (req, res) => {
   // `verifyToken` middleware should attach user info to req.user

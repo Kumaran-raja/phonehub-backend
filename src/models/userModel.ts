@@ -1,20 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-// Define user roles as enum
 export enum SellerType {
   INDIVIDUAL = "individual",
-  Business = "business",
+  BUSINESS = "business",
 }
 
-@Entity("users") // optional table name
+@Entity("users")
 export class User {
-  @PrimaryGeneratedColumn() // auto-increment primary key
+  @PrimaryGeneratedColumn()
   id!: number;
 
   @Column({ type: "varchar", unique: true, length: 255 })
   email!: string;
 
-   @Column({ type: "varchar", unique: true, length: 255 })
+  @Column({ type: "varchar", unique: true, length: 255 })
   username!: string;
 
   @Column({ type: "varchar", unique: true, length: 255 })
@@ -33,12 +32,18 @@ export class User {
   })
   sellertype!: SellerType;
 
-  @Column({type:"varchar",length:255})
-  storename!:string
+  @Column({ type: "varchar", length: 255 })
+  storename!: string;
 
-  @Column({type:"varchar",length:255})
-  storeaddress!:string
+  @Column({ type: "varchar", length: 255 })
+  storeaddress!: string;
 
-  @Column({type:"varchar",length:255})
-  tradelicence!:string //image path
+  @Column({ type: "varchar", length: 255 })
+  tradelicence!: string;
+
+  @Column({ type: "boolean", default: false })
+  isVerified!: boolean;
+
+  @Column({ type: "varchar", length: 6, nullable: true })
+  emailOtp!: string | null;
 }
