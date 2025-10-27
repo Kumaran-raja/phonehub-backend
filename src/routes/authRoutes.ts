@@ -9,6 +9,36 @@ import { Request, Response } from "express";
 const router = Router();
 const userRepo = AppDataSource.getRepository(User);
 
+
+
+
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// 🗂️ Create uploads directory if not exists
+const uploadDir = path.join(__dirname, "../../uploads/licenses");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ⚙️ Setup multer storage
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
+
+
+
+
 // Public
 router.post("/signup", signup);
 router.post("/login", login);
@@ -56,68 +86,52 @@ router.post("/logout", verifyToken, (req, res) => {
 });
 
 
-router.put("/update", verifyToken, async (req: Request, res: Response) => {
-  try {
-    const decodedUser = (req as any).user;
-    if (!decodedUser) {
-      return res.status(401).json({ message: "Unauthorized" });
+router.put(
+  "/update",
+  verifyToken,
+  upload.single("tradelicence"), // 👈 handle file upload
+  async (req: Request, res: Response) => {
+    try {
+      const decodedUser = (req as any).user;
+      if (!decodedUser) return res.status(401).json({ message: "Unauthorized" });
+
+      const { username, phone, city, sellertype, storename, storeaddress } = req.body;
+
+      const user = await userRepo.findOne({ where: { id: decodedUser.id } });
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      if (username) user.username = username;
+      if (phone) user.phone = phone;
+      if (city) user.city = city;
+      if (sellertype === "individual" || sellertype === "business") {
+        user.sellertype = sellertype;
+      }
+
+      if (user.sellertype === "business") {
+        user.storename = storename || user.storename;
+        user.storeaddress = storeaddress || user.storeaddress;
+
+        // ✅ If a file is uploaded, store its relative path
+        if (req.file) {
+          user.tradelicence = `/uploads/licenses/${req.file.filename}`;
+        }
+      } else {
+        user.storename = "";
+        user.storeaddress = "";
+        user.tradelicence = "";
+      }
+
+      await userRepo.save(user);
+
+      const { password, emailOtp, ...safeUser } = user;
+      res.json({ message: "Profile updated successfully", user: safeUser });
+    } catch (err) {
+      console.error("Error updating user:", err);
+      res.status(500).json({ message: "Server error" });
     }
-
-    const {
-      username,
-      phone,
-      city,
-      sellertype,
-      storename,
-      storeaddress,
-      tradelicence,
-    } = req.body;
-
-    const user = await userRepo.findOne({ where: { id: decodedUser.id } });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // 🚫 Prevent email updates explicitly
-    // (even if attacker sends email field manually)
-    if ("email" in req.body) {
-      delete (req.body as any).email;
-    }
-
-    // ✅ Update allowed fields only
-    if (username) user.username = username;
-    if (phone) user.phone = phone;
-    if (city) user.city = city;
-    if (sellertype && Object.values(SellerType).includes(sellertype)) {
-      user.sellertype = sellertype;
-    }
-
-    // ✅ Handle business / individual fields properly
-    if (user.sellertype === SellerType.BUSINESS) {
-      user.storename = storename || user.storename;
-      user.storeaddress = storeaddress || user.storeaddress;
-      user.tradelicence = tradelicence || user.tradelicence;
-    } else {
-      // clear business fields if user switches to individual
-      user.storename = "";
-      user.storeaddress = "";
-      user.tradelicence = "";
-    }
-
-    await userRepo.save(user);
-
-    // 🧹 Return safe user data (no password or OTP)
-    const { password, emailOtp, ...safeUser } = user;
-
-    return res.json({
-      message: "Profile updated successfully",
-      user: safeUser,
-    });
-  } catch (err) {
-    console.error("Error updating user:", err);
-    res.status(500).json({ message: "Server error" });
   }
-});
+);
+
 
 
 export default router;
