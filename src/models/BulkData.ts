@@ -4,12 +4,23 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { User } from "./userModel";
 
 @Entity()
 export class Bulk {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  // 🔹 Relation with User
+  @ManyToOne(() => User, (user) => user.bulkListings, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
+  user!: User;
+
+  @Column()
+  userId!: number; // ✅ Foreign Key (important)
 
   // 🔹 Basic Info
   @Column()

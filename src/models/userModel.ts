@@ -1,6 +1,7 @@
 // models/userModel.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
 import { FixedPrice } from "./FixedPrice";
+import { Bulk } from "./BulkData";
 
 export enum SellerType {
   INDIVIDUAL = "individual",
@@ -49,6 +50,10 @@ export class User {
 
   @Column({ type: "varchar", length: 6, nullable: true })
   emailOtp!: string | null;
+
+  @OneToMany(() => Bulk, (bulk) => bulk.user)
+bulkListings!: Bulk[];
+
 
   // ✅ Reverse relation to FixedPrice listings
   @OneToMany(() => FixedPrice, (fixed) => fixed.user)

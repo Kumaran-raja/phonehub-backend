@@ -6,6 +6,7 @@ import {
   getBulkById,
   updateBulk,
   deleteBulk,
+  getBulkByUser,
 } from "../controllers/bulkController";
 import { verifyToken } from "../auth/middleware";
 
@@ -14,6 +15,7 @@ const router = Router();
 // Public routes
 router.get("/", getBulk);
 router.get("/:id", getBulkById);
+router.get("/bulkseller/:id", getBulkByUser);
 
 // Protected routes
 router.post("/create", verifyToken, createBulk);

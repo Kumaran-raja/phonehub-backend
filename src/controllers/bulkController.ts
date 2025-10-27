@@ -64,6 +64,7 @@ export const createBulk = async (req: Request, res: Response) => {
 
     // ✅ Create new bulk listing
     const bulk = bulkRepo.create({
+      userId: decodedUser.id, // ✅ link with logged-in user
       model,
       storage,
       variant,
@@ -91,15 +92,17 @@ export const createBulk = async (req: Request, res: Response) => {
 
     await bulkRepo.save(bulk);
     res.status(201).json({ message: "✅ Bulk listing created", bulk });
-  }  catch (error: any) {
-  console.error("❌ Error creating bulk:", error);
-  res
-    .status(500)
-    .json({ message: "Server error", error: error.message, stack: error.stack });
-}
-
+  } catch (error: any) {
+    console.error("❌ Error creating bulk:", error);
+    res
+      .status(500)
+      .json({
+        message: "Server error",
+        error: error.message,
+        stack: error.stack,
+      });
+  }
 };
-
 
 // ✅ Get All Bulk Listings
 export const getBulk = async (_req: Request, res: Response) => {
@@ -175,6 +178,21 @@ export const deleteBulk = async (req: Request, res: Response) => {
     res.json({ message: "✅ Bulk deleted successfully" });
   } catch (error) {
     console.error("❌ Error deleting bulk:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ✅ Get All Bulk Listings by User ID
+export const getBulkByUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params; // or use :userId
+    const list = await bulkRepo.find({
+      where: { userId: Number(id) },
+      order: { createdAt: "DESC" },
+    });
+    res.json(list);
+  } catch (error) {
+    console.error("❌ Error fetching bulk by user:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
