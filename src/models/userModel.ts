@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+// models/userModel.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { FixedPrice } from "./FixedPrice";
 
 export enum SellerType {
   INDIVIDUAL = "individual",
   BUSINESS = "business",
-  BUYER= "buyer"
+  BUYER = "buyer",
 }
 
 @Entity("users")
@@ -47,4 +49,8 @@ export class User {
 
   @Column({ type: "varchar", length: 6, nullable: true })
   emailOtp!: string | null;
+
+  // ✅ Reverse relation to FixedPrice listings
+  @OneToMany(() => FixedPrice, (fixed) => fixed.user)
+  fixedPrices!: FixedPrice[];
 }

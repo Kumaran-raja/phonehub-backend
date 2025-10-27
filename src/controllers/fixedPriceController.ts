@@ -10,6 +10,7 @@ const userRepo = AppDataSource.getRepository(User);
 export const createFixedPrice = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
+
     const {
       model,
       storage,
@@ -23,41 +24,9 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       batteryHealth,
     } = req.body;
 
-    console.log("📦 Incoming Body:", req.body);
-    console.log("🧑‍💻 Decoded User:", decodedUser);
+    const user = await userRepo.findOne({ where: { id: decodedUser.id } });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    // --- Step 1: Initialize seller info from token/body
-    let sellerName =
-      req.body.sellerName?.trim() ||
-      decodedUser?.username ||
-      decodedUser?.name ||
-      "";
-    let sellerPhoneFinal =
-      req.body.sellerPhone?.trim() ||
-      decodedUser?.phone ||
-      decodedUser?.mobile ||
-      "";
-
-    // --- Step 2: If missing, lookup in DB by email
-    if ((!sellerName || !sellerPhoneFinal) && decodedUser?.email) {
-      const dbUser = await userRepo.findOne({
-        where: { email: decodedUser.email },
-        select: ["username", "phone", "email", "sellertype"],
-      });
-      if (dbUser) {
-        if (!sellerName) sellerName = dbUser.username;
-        if (!sellerPhoneFinal) sellerPhoneFinal = dbUser.phone;
-      }
-    }
-
-    // --- Step 3: Validate essential fields
-    if (!sellerName) {
-      return res.status(400).json({
-        message: "Seller name missing — please update your profile.",
-      });
-    }
-
-    // --- Step 4: Create and save listing
     const fixed = fixedRepo.create({
       model,
       storage,
@@ -67,15 +36,21 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       location,
       description: description || null,
       images: images || null,
-      sellerType: sellerType || decodedUser?.sellertype || "individual",
-      sellerName,
-      sellerPhone: sellerPhoneFinal || null,
-       batteryHealth: batteryHealth || null,
+      sellerType: sellerType || user.sellertype,
+      sellerName: user.username,
+      sellerPhone: user.phone,
+      batteryHealth: batteryHealth || null,
       verified: false,
+      user, // ✅ attach relation
+      userId: user.id, // ✅ store FK
     });
 
     await fixedRepo.save(fixed);
-    res.status(201).json({ message: "✅ Fixed price created successfully", fixed });
+
+    res.status(201).json({
+      message: "✅ Fixed price created successfully",
+      fixed,
+    });
   } catch (error) {
     console.error("❌ Error creating fixed price:", error);
     res.status(500).json({ message: "Server error" });
@@ -109,6 +84,20 @@ export const getFixedPrices = async (_req: Request, res: Response) => {
     res.json(withTimeAgo);
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getFixedByUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const listings = await fixedRepo.find({
+      where: { userId: Number(id) },
+      order: { createdAt: "DESC" },
+    });
+    res.json(listings);
+  } catch (error) {
+    console.error("Error fetching user's listings:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

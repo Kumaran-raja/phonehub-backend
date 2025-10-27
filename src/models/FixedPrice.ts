@@ -1,3 +1,4 @@
+// models/FixedPrice.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,13 +6,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { User } from "./userModel";
 
 export type SellerType = "individual" | "business" | "buyer";
-
 export type SpecKV = { key: string; value: string };
 
-@Entity()
+@Entity("fixed_prices")
 export class FixedPrice {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -23,9 +25,8 @@ export class FixedPrice {
   storage!: string;
 
   @Column()
-  price!: string; // keep string if you want "AED 3,850" or numeric string; use number if numeric
+  price!: string;
 
-  // specs stored as JSON array of key/value objects
   @Column({ type: "json", nullable: true })
   specs!: SpecKV[] | null;
 
@@ -36,12 +37,11 @@ export class FixedPrice {
   location!: string;
 
   @Column({ type: "varchar", length: 10, nullable: true })
-batteryHealth!: string | null;
+  batteryHealth!: string | null;
 
   @Column("text", { nullable: true })
   description!: string | null;
 
-  // images stored as array of URLs (if you upload to S3/Cloud)
   @Column({ type: "json", nullable: true })
   images!: string[] | null;
 
@@ -51,12 +51,19 @@ batteryHealth!: string | null;
   @Column({ type: "varchar", length: 255 })
   sellerName!: string;
 
-  // phone to allow querying by seller phone
   @Column({ type: "varchar", length: 50, nullable: true })
   sellerPhone!: string | null;
 
   @Column({ type: "boolean", default: false })
   verified!: boolean;
+
+  // ✅ Relation with User
+  @ManyToOne(() => User, (user) => user.fixedPrices, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
+  user!: User;
+
+  @Column()
+  userId!: number;
 
   @CreateDateColumn({ type: "timestamp" })
   createdAt!: Date;
