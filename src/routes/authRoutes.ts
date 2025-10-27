@@ -63,11 +63,25 @@ router.put("/update", verifyToken, async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { username, phone, city, sellertype, storename, storeaddress, tradelicence } = req.body;
+    const {
+      username,
+      phone,
+      city,
+      sellertype,
+      storename,
+      storeaddress,
+      tradelicence,
+    } = req.body;
 
     const user = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🚫 Prevent email updates explicitly
+    // (even if attacker sends email field manually)
+    if ("email" in req.body) {
+      delete (req.body as any).email;
     }
 
     // ✅ Update allowed fields only
@@ -78,12 +92,13 @@ router.put("/update", verifyToken, async (req: Request, res: Response) => {
       user.sellertype = sellertype;
     }
 
+    // ✅ Handle business / individual fields properly
     if (user.sellertype === SellerType.BUSINESS) {
       user.storename = storename || user.storename;
       user.storeaddress = storeaddress || user.storeaddress;
       user.tradelicence = tradelicence || user.tradelicence;
     } else {
-      // clear business fields for individual accounts
+      // clear business fields if user switches to individual
       user.storename = "";
       user.storeaddress = "";
       user.tradelicence = "";
@@ -91,14 +106,18 @@ router.put("/update", verifyToken, async (req: Request, res: Response) => {
 
     await userRepo.save(user);
 
-    // Return updated safe user info (no password)
+    // 🧹 Return safe user data (no password or OTP)
     const { password, emailOtp, ...safeUser } = user;
 
-    res.json({ message: "Profile updated successfully", user: safeUser });
+    return res.json({
+      message: "Profile updated successfully",
+      user: safeUser,
+    });
   } catch (err) {
     console.error("Error updating user:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 export default router;
