@@ -20,6 +20,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       description,
       images,
       sellerType,
+      batteryHealth,
     } = req.body;
 
     console.log("📦 Incoming Body:", req.body);
@@ -69,6 +70,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       sellerType: sellerType || decodedUser?.sellertype || "individual",
       sellerName,
       sellerPhone: sellerPhoneFinal || null,
+       batteryHealth: batteryHealth || null,
       verified: false,
     });
 
@@ -80,15 +82,37 @@ export const createFixedPrice = async (req: Request, res: Response) => {
   }
 };
 
+const getTimeAgo = (createdAt: Date): string => {
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months > 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years > 1 ? "s" : ""} ago`;
+};
+
 export const getFixedPrices = async (_req: Request, res: Response) => {
   try {
     const list = await fixedRepo.find({ order: { createdAt: "DESC" } });
-    res.json(list);
+    const withTimeAgo = list.map((item) => ({
+      ...item,
+      postedAgo: getTimeAgo(item.createdAt), // ✅ dynamically add
+    }));
+    res.json(withTimeAgo);
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export const getFixedById = async (req: Request, res: Response) => {
   try {

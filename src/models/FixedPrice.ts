@@ -35,6 +35,9 @@ export class FixedPrice {
   @Column()
   location!: string;
 
+  @Column({ type: "varchar", length: 10, nullable: true })
+batteryHealth!: string | null;
+
   @Column("text", { nullable: true })
   description!: string | null;
 
