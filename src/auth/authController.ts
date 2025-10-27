@@ -9,26 +9,46 @@ const SECRET = process.env.JWT_SECRET_KEY || "fallback_secret";
 const userRepo = AppDataSource.getRepository(User);
 
 // ===== SIGNUP =====
-
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, username, phone, city, password, sellertype, storename, storeaddress, tradelicence } = req.body;
+    const {
+      email,
+      username,
+      phone,
+      city,
+      password,
+      sellertype,
+      storename,
+      storeaddress,
+      tradelicence, // this can be empty or omitted
+    } = req.body;
 
     // Check duplicates
-    if (await userRepo.findOne({ where: { email } })) return res.status(400).json({ message: "Email already registered" });
-    if (await userRepo.findOne({ where: { username } })) return res.status(400).json({ message: "Username taken" });
-    if (await userRepo.findOne({ where: { phone } })) return res.status(400).json({ message: "Phone already registered" });
+    if (await userRepo.findOne({ where: { email } }))
+      return res.status(400).json({ message: "Email already registered" });
 
+    if (await userRepo.findOne({ where: { username } }))
+      return res.status(400).json({ message: "Username taken" });
+
+    if (await userRepo.findOne({ where: { phone } }))
+      return res.status(400).json({ message: "Phone already registered" });
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const newUser = userRepo.create({
-      email, username, phone, city,
+      email,
+      username,
+      phone,
+      city,
       password: hashedPassword,
       sellertype: sellertype || SellerType.INDIVIDUAL,
-      storename, storeaddress, tradelicence,
+      storename: storename || "",
+      storeaddress: storeaddress || "",
+      tradelicence: tradelicence || "", // empty if not provided
       emailOtp: otp,
       isVerified: false,
     });
@@ -39,13 +59,15 @@ export const signup = async (req: Request, res: Response) => {
     await sendOtpEmail(email, otp);
 
     res.status(201).json({
-      message: "User registered. Please check your email for OTP to verify your account.",
+      message:
+        "User registered successfully. Please check your email for OTP to verify your account.",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Signup Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ===== VERIFY EMAIL =====
 export const verifyOtp = async (req: Request, res: Response) => {
