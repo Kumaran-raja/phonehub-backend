@@ -11,13 +11,13 @@ const userRepo = AppDataSource.getRepository(User);
 // 🟢 Create new auction
 export const createAuction = async (req: Request, res: Response) => {
   try {
-    const { model, specs, startBid, durationHours } = req.body;
+    const { model, specs, startBid, duration } = req.body;
     const decodedUser = (req as any).user;
 
     const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!seller) return res.status(404).json({ message: "Seller not found" });
 
-    const durationSeconds = durationHours * 3600;
+    const durationSeconds = duration * 3600;
     const endTime = new Date(Date.now() + durationSeconds * 1000);
 
     const auction = auctionRepo.create({
@@ -40,7 +40,7 @@ export const createAuction = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Get all auctions with live countdown and latest bidder
+// 🟢 Get all auctions
 export const getAuctions = async (_req: Request, res: Response) => {
   try {
     const auctions = await auctionRepo.find({ relations: ["bids"] });
@@ -81,6 +81,82 @@ export const getAuctions = async (_req: Request, res: Response) => {
     res.json(formatted);
   } catch (error) {
     console.error("Error fetching auctions:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 🟢 Get single auction by ID
+export const getAuctionById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const auction = await auctionRepo.findOne({
+      where: { id: Number(id) },
+      relations: ["bids"],
+    });
+
+    if (!auction) return res.status(404).json({ message: "Auction not found" });
+
+    res.json(auction);
+  } catch (error) {
+    console.error("Error fetching auction by ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 🟢 Update auction
+export const updateAuction = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const decodedUser = (req as any).user;
+
+    const auction = await auctionRepo.findOne({ where: { id: Number(id) } });
+    if (!auction) return res.status(404).json({ message: "Auction not found" });
+
+    const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
+    if (!seller) return res.status(404).json({ message: "Seller not found" });
+
+    // only owner can update
+    if (auction.sellerName !== seller.username)
+      return res.status(403).json({ message: "Unauthorized to update this auction" });
+
+    const { model, specs, startBid, duration } = req.body;
+
+    if (model) auction.model = model;
+    if (specs) auction.specs = specs;
+    if (startBid) auction.startBid = startBid;
+    if (duration) {
+      auction.durationSeconds = duration * 3600;
+      auction.endTime = new Date(Date.now() + auction.durationSeconds * 1000);
+    }
+
+    await auctionRepo.save(auction);
+    res.json({ message: "Auction updated successfully", auction });
+  } catch (error) {
+    console.error("Error updating auction:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 🟢 Delete auction
+export const deleteAuction = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const decodedUser = (req as any).user;
+
+    const auction = await auctionRepo.findOne({ where: { id: Number(id) } });
+    if (!auction) return res.status(404).json({ message: "Auction not found" });
+
+    const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
+    if (!seller) return res.status(404).json({ message: "Seller not found" });
+
+    // only owner can delete
+    if (auction.sellerName !== seller.username)
+      return res.status(403).json({ message: "Unauthorized to delete this auction" });
+
+    await auctionRepo.remove(auction);
+    res.json({ message: "Auction deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting auction:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

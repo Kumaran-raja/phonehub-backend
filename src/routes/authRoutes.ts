@@ -3,7 +3,7 @@ import { signup, login, verifyOtp } from "../auth/authController";
 import { verifyToken } from "../auth/middleware";
 import { tokenBlocklist } from "../auth/tokenBlocklist";
 import { AppDataSource } from "../config/db";
-import { SellerType, User } from "../models/userModel";
+import {  User } from "../models/userModel";
 import { Request, Response } from "express";
 
 const router = Router();
@@ -40,7 +40,7 @@ const upload = multer({ storage });
 
 
 // Public
-router.post("/signup", signup);
+router.post("/signup", upload.single("tradelicence"), signup);
 router.post("/login", login);
 router.post("/verify-otp", verifyOtp); 
 
@@ -103,7 +103,7 @@ router.put(
       if (username) user.username = username;
       if (phone) user.phone = phone;
       if (city) user.city = city;
-      if (sellertype === "individual" || sellertype === "business") {
+      if (sellertype === "individual" || sellertype === "business" || sellertype==="buyer") {
         user.sellertype = sellertype;
       }
 

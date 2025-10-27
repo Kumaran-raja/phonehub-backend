@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { Bid } from "./Bid";
 
-export type SellerType = "individual" | "business";
+export type SellerType = "individual" | "business" | "buyer";
 
 @Entity()
 export class Auction {
@@ -18,8 +18,8 @@ export class Auction {
   @Column()
   model!: string;
 
-  @Column("text")
-  specs!: string;
+  @Column({ type: "json", nullable: true })
+  specs!: { key: string; value: string }[];
 
   @Column({ type: "double precision", default: 0 })
   currentBid!: number;

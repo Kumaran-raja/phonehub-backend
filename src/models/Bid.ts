@@ -13,22 +13,22 @@ export class Bid {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Auction, (auction) => auction.bids, { onDelete: "CASCADE" })
+  @Column({ type: "double precision" })
+  amount!: number;
+
+  @Column({ type: "varchar", length: 255 })
+  bidderName!: string;
+
+  @CreateDateColumn({ type: "timestamp" })
+  createdAt!: Date;
+
+  // Foreign key relationship to Auction
+  @ManyToOne(() => Auction, (auction) => auction.bids, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "auctionId" })
   auction!: Auction;
 
   @Column()
-  auctionId!: number;
-
-  @Column({ length: 100 })
-  bidderName!: string;
-
-  @Column({ type: "double precision" })
-  amount!: number;
-
-  @Column({ length: 30, default: "bid" })
-  action!: string;
-
-  @CreateDateColumn({ type: "timestamp" })
-  createdAt!: Date;
+  auctionId!: number; // optional but useful for direct filtering
 }

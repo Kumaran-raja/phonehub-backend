@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 export enum SellerType {
   INDIVIDUAL = "individual",
   BUSINESS = "business",
+  BUYER= "buyer"
 }
 
 @Entity("users")
@@ -28,7 +29,7 @@ export class User {
   @Column({
     type: "enum",
     enum: SellerType,
-    default: SellerType.INDIVIDUAL,
+    default: SellerType.BUYER,
   })
   sellertype!: SellerType;
 
