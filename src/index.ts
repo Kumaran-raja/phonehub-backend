@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
 import auctionRoutes from "./routes/auctionRoutes";
+import fixedPriceRoutes from "./routes/fixedPriceRoutes";
 import { connectDB } from "./config/db";
 import "reflect-metadata";
 import path from "path";
@@ -35,6 +36,7 @@ connectDB();
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auction", auctionRoutes);
+app.use("/api/fixedprice", fixedPriceRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
