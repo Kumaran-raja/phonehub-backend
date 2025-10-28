@@ -73,20 +73,30 @@ const getTimeAgo = (createdAt: Date): string => {
   const years = Math.floor(months / 12);
   return `${years} year${years > 1 ? "s" : ""} ago`;
 };
-
-export const getFixedPrices = async (_req: Request, res: Response) => {
+export const getFixedPrices = async (req: Request, res: Response) => {
   try {
-    const list = await fixedRepo.find({ order: { createdAt: "DESC" } });
+    const limit = Number(req.query.limit) || 10; // default 10
+    const skip = Number(req.query.skip) || 0; // default 0
+
+    const list = await fixedRepo.find({
+      order: { createdAt: "DESC" },
+      take: limit, // ✅ limit number of results
+      skip,        // ✅ skip previous results for infinite scroll
+    });
+
     const withTimeAgo = list.map((item) => ({
       ...item,
-      postedAgo: getTimeAgo(item.createdAt), // ✅ dynamically add
+      postedAgo: getTimeAgo(item.createdAt),
     }));
-    res.json(withTimeAgo);
+
+    res.json({ data: withTimeAgo }); // ✅ return inside "data" key
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 export const getFixedByUser = async (req: Request, res: Response) => {
   try {

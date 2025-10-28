@@ -104,16 +104,33 @@ export const createBulk = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ Get All Bulk Listings
-export const getBulk = async (_req: Request, res: Response) => {
+
+// ✅ Get All Bulk Listings (with limit + skip)
+export const getBulk = async (req: Request, res: Response) => {
   try {
-    const list = await bulkRepo.find({ order: { createdAt: "DESC" } });
-    res.json(list);
+    // parse query params
+    const limit = Number(req.query.limit) || 10; // default 10
+    const skip = Number(req.query.skip) || 0;    // default 0
+
+    const [list, total] = await bulkRepo.findAndCount({
+      order: { createdAt: "DESC" },
+      skip,
+      take: limit,
+    });
+
+    res.json({
+      data: list,
+      total,
+      limit,
+      skip,
+      hasMore: skip + limit < total,
+    });
   } catch (error) {
     console.error("❌ Error fetching bulk:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ✅ Get Bulk Listing by ID
 export const getBulkById = async (req: Request, res: Response) => {
