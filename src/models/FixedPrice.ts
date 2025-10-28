@@ -25,6 +25,9 @@ export class FixedPrice {
   storage!: string;
 
   @Column()
+  variant!: string;
+
+  @Column()
   price!: string;
 
   @Column({ type: "json", nullable: true })

@@ -14,6 +14,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
     const {
       model,
       storage,
+      variant,
       price,
       specs,
       condition,
@@ -30,6 +31,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
     const fixed = fixedRepo.create({
       model,
       storage,
+      variant,
       price,
       specs: specs || null,
       condition,
@@ -158,6 +160,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
     const {
       model,
       storage,
+      variant,
       price,
       specs,
       condition,
@@ -171,6 +174,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
 
     if (model) fixed.model = model;
     if (storage) fixed.storage = storage;
+    if (variant) fixed.variant = variant;
     if (price) fixed.price = price;
     if (specs !== undefined) fixed.specs = specs;
     if (condition) fixed.condition = condition;
