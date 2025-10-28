@@ -55,7 +55,6 @@ export class User {
 bulkListings!: Bulk[];
 
 
-  // ✅ Reverse relation to FixedPrice listings
   @OneToMany(() => FixedPrice, (fixed) => fixed.user)
   fixedPrices!: FixedPrice[];
 }

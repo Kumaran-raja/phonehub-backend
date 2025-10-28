@@ -1,5 +1,4 @@
 export function parseDurationToSeconds(duration: string): number {
-  // Accept values like '24h', '48h', '2d', '72' (hours), '3600s', '30m'
   const s = duration.trim().toLowerCase();
 
   if (s.endsWith("d")) {
@@ -18,7 +17,6 @@ export function parseDurationToSeconds(duration: string): number {
     return Math.round(parseFloat(s.slice(0, -1)));
   }
 
-  // plain number: treat as hours
   const n = parseFloat(s);
   if (!isNaN(n)) return Math.round(n * 3600);
 

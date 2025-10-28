@@ -31,6 +31,9 @@ export class FixedPrice {
   badgeType!: string;
 
   @Column()
+  old!: string;
+
+  @Column()
   price!: string;
 
   @Column({ type: "json", nullable: true })

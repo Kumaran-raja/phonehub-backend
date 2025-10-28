@@ -7,7 +7,7 @@ import { Bulk } from "../models/BulkData";
 const bulkRepo = AppDataSource.getRepository(Bulk);
 const userRepo = AppDataSource.getRepository(User);
 
-// ✅ Create Bulk Listing (Protected)
+//  Create Bulk Listing (Protected)
 export const createBulk = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
@@ -34,7 +34,7 @@ export const createBulk = async (req: Request, res: Response) => {
       totalPrice,
     } = req.body;
 
-    // 🧠 Get seller info from JWT or DB
+    //  Get seller info from JWT or DB
     let sellerName =
       req.body.sellerName?.trim() ||
       decodedUser?.username ||
@@ -62,9 +62,9 @@ export const createBulk = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Seller name missing — please update your profile." });
 
-    // ✅ Create new bulk listing
+    //  Create new bulk listing
     const bulk = bulkRepo.create({
-      userId: decodedUser.id, // ✅ link with logged-in user
+      userId: decodedUser.id, //  link with logged-in user
       model,
       storage,
       variant,
@@ -91,9 +91,9 @@ export const createBulk = async (req: Request, res: Response) => {
     });
 
     await bulkRepo.save(bulk);
-    res.status(201).json({ message: "✅ Bulk listing created", bulk });
+    res.status(201).json({ message: " Bulk listing created", bulk });
   } catch (error: any) {
-    console.error("❌ Error creating bulk:", error);
+    console.error(" Error creating bulk:", error);
     res
       .status(500)
       .json({
@@ -105,10 +105,8 @@ export const createBulk = async (req: Request, res: Response) => {
 };
 
 
-// ✅ Get All Bulk Listings (with limit + skip)
 export const getBulk = async (req: Request, res: Response) => {
   try {
-    // parse query params
     const limit = Number(req.query.limit) || 10; // default 10
     const skip = Number(req.query.skip) || 0;    // default 0
 
@@ -126,13 +124,13 @@ export const getBulk = async (req: Request, res: Response) => {
       hasMore: skip + limit < total,
     });
   } catch (error) {
-    console.error("❌ Error fetching bulk:", error);
+    console.error(" Error fetching bulk:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 
-// ✅ Get Bulk Listing by ID
+//  Get Bulk Listing by ID
 export const getBulkById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -140,7 +138,7 @@ export const getBulkById = async (req: Request, res: Response) => {
     if (!item) return res.status(404).json({ message: "Not found" });
     res.json(item);
   } catch (error) {
-    console.error("❌ Error fetching bulk by id:", error);
+    console.error("Error fetching bulk by id:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -166,14 +164,14 @@ export const updateBulk = async (req: Request, res: Response) => {
     Object.assign(bulk, req.body);
     await bulkRepo.save(bulk);
 
-    res.json({ message: "✅ Bulk updated", bulk });
+    res.json({ message: "Bulk updated", bulk });
   } catch (error) {
-    console.error("❌ Error updating bulk:", error);
+    console.error("Error updating bulk:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// ✅ Delete Bulk Listing (Protected)
+//  Delete Bulk Listing (Protected)
 export const deleteBulk = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -192,14 +190,14 @@ export const deleteBulk = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Unauthorized" });
 
     await bulkRepo.remove(bulk);
-    res.json({ message: "✅ Bulk deleted successfully" });
+    res.json({ message: " Bulk deleted successfully" });
   } catch (error) {
-    console.error("❌ Error deleting bulk:", error);
+    console.error(" Error deleting bulk:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// ✅ Get All Bulk Listings by User ID
+//  Get All Bulk Listings by User ID
 export const getBulkByUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; // or use :userId
@@ -209,7 +207,7 @@ export const getBulkByUser = async (req: Request, res: Response) => {
     });
     res.json(list);
   } catch (error) {
-    console.error("❌ Error fetching bulk by user:", error);
+    console.error(" Error fetching bulk by user:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

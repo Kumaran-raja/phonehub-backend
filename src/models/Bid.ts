@@ -22,7 +22,6 @@ export class Bid {
   @CreateDateColumn({ type: "timestamp" })
   createdAt!: Date;
 
-  // Foreign key relationship to Auction
   @ManyToOne(() => Auction, (auction) => auction.bids, {
     onDelete: "CASCADE",
   })
@@ -30,5 +29,5 @@ export class Bid {
   auction!: Auction;
 
   @Column()
-  auctionId!: number; // optional but useful for direct filtering
+  auctionId!: number; 
 }

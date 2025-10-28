@@ -3,26 +3,23 @@ import { signup, login, verifyOtp } from "../auth/authController";
 import { verifyToken } from "../auth/middleware";
 import { tokenBlocklist } from "../auth/tokenBlocklist";
 import { AppDataSource } from "../config/db";
-import {  User } from "../models/userModel";
+import { User } from "../models/userModel";
 import { Request, Response } from "express";
 
 const router = Router();
 const userRepo = AppDataSource.getRepository(User);
 
-
-
-
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// 🗂️ Create uploads directory if not exists
+// Create uploads directory if not exists
 const uploadDir = path.join(__dirname, "../../uploads/licenses");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ⚙️ Setup multer storage
+// Setup multer storage
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
@@ -35,14 +32,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-
-
-
-
 // Public
 router.post("/signup", upload.single("tradelicence"), signup);
 router.post("/login", login);
-router.post("/verify-otp", verifyOtp); 
+router.post("/verify-otp", verifyOtp);
 
 router.get("/me", verifyToken, async (req, res) => {
   try {
@@ -77,25 +70,25 @@ router.get("/me", verifyToken, async (req, res) => {
   }
 });
 
-
 router.post("/logout", verifyToken, (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader?.split(" ")[1];
-  if (token) tokenBlocklist.add(token); // add token to blocklist
+  if (token) tokenBlocklist.add(token);
   res.json({ message: "Logged out successfully" });
 });
-
 
 router.put(
   "/update",
   verifyToken,
-  upload.single("tradelicence"), // 👈 handle file upload
+  upload.single("tradelicence"),
   async (req: Request, res: Response) => {
     try {
       const decodedUser = (req as any).user;
-      if (!decodedUser) return res.status(401).json({ message: "Unauthorized" });
+      if (!decodedUser)
+        return res.status(401).json({ message: "Unauthorized" });
 
-      const { username, phone, city, sellertype, storename, storeaddress } = req.body;
+      const { username, phone, city, sellertype, storename, storeaddress } =
+        req.body;
 
       const user = await userRepo.findOne({ where: { id: decodedUser.id } });
       if (!user) return res.status(404).json({ message: "User not found" });
@@ -103,7 +96,11 @@ router.put(
       if (username) user.username = username;
       if (phone) user.phone = phone;
       if (city) user.city = city;
-      if (sellertype === "individual" || sellertype === "business" || sellertype==="buyer") {
+      if (
+        sellertype === "individual" ||
+        sellertype === "business" ||
+        sellertype === "buyer"
+      ) {
         user.sellertype = sellertype;
       }
 
@@ -131,7 +128,5 @@ router.put(
     }
   }
 );
-
-
 
 export default router;

@@ -36,11 +36,9 @@ export class Auction {
   @Column({ type: "varchar", length: 255 })
   sellerName!: string;
 
-  // Auction duration in seconds (e.g. 24h = 86400s)
   @Column({ type: "bigint" })
   durationSeconds!: number;
 
-  // Auction end time (auto-calculated on creation)
   @Column({ type: "timestamp" })
   endTime!: Date;
 

@@ -15,6 +15,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       model,
       storage,
       variant,
+      old,
       price,
       specs,
       condition,
@@ -34,6 +35,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       storage,
       variant,
       price,
+      old,
       specs: specs || null,
       condition,
       badgeType,
@@ -45,18 +47,18 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       sellerPhone: user.phone,
       batteryHealth: batteryHealth || null,
       verified: false,
-      user, // ✅ attach relation
-      userId: user.id, // ✅ store FK
+      user,
+      userId: user.id,
     });
 
     await fixedRepo.save(fixed);
 
     res.status(201).json({
-      message: "✅ Fixed price created successfully",
+      message: " Fixed price created successfully",
       fixed,
     });
   } catch (error) {
-    console.error("❌ Error creating fixed price:", error);
+    console.error("Error creating fixed price:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -79,13 +81,13 @@ const getTimeAgo = (createdAt: Date): string => {
 };
 export const getFixedPrices = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit) || 10; // default 10
-    const skip = Number(req.query.skip) || 0; // default 0
+    const limit = Number(req.query.limit) || 10; 
+    const skip = Number(req.query.skip) || 0; 
 
     const list = await fixedRepo.find({
       order: { createdAt: "DESC" },
-      take: limit, // ✅ limit number of results
-      skip,        // ✅ skip previous results for infinite scroll
+      take: limit,
+      skip,        
     });
 
     const withTimeAgo = list.map((item) => ({
@@ -93,7 +95,7 @@ export const getFixedPrices = async (req: Request, res: Response) => {
       postedAgo: getTimeAgo(item.createdAt),
     }));
 
-    res.json({ data: withTimeAgo }); // ✅ return inside "data" key
+    res.json({ data: withTimeAgo }); // return inside "data" key
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
     res.status(500).json({ message: "Server error" });
@@ -164,6 +166,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       storage,
       variant,
       price,
+      old,
       specs,
       badgeType,
       condition,
@@ -178,6 +181,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
     if (model) fixed.model = model;
     if (storage) fixed.storage = storage;
     if (variant) fixed.variant = variant;
+    if (old) fixed.old = old;
     if (badgeType) fixed.badgeType = badgeType;
     if (price) fixed.price = price;
     if (specs !== undefined) fixed.specs = specs;

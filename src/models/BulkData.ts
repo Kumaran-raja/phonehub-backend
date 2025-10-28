@@ -14,15 +14,13 @@ export class Bulk {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // 🔹 Relation with User
   @ManyToOne(() => User, (user) => user.bulkListings, { onDelete: "CASCADE" })
   @JoinColumn({ name: "userId" })
   user!: User;
 
   @Column()
-  userId!: number; // ✅ Foreign Key (important)
+  userId!: number; 
 
-  // 🔹 Basic Info
   @Column()
   model!: string;
 
@@ -44,7 +42,6 @@ export class Bulk {
   @Column({ nullable: true })
   description?: string;
 
-  // 🔹 Pricing
   @Column({ type: "float", default: 0 })
   price!: number;
 
@@ -57,7 +54,6 @@ export class Bulk {
   @Column({ type: "float", default: 0 })
   totalPrice!: number;
 
-  // 🔹 MOQ & Pricing tiers
   @Column({ nullable: true })
   moqType?: "starter" | "standard" | "custom";
 
@@ -71,7 +67,6 @@ export class Bulk {
     discount: string;
   }[];
 
-  // 🔹 Bulk Features
   @Column("simple-json", { nullable: true })
   bulkFeatures?: {
     name: string;
@@ -80,7 +75,6 @@ export class Bulk {
     selected: boolean;
   }[];
 
-  // 🔹 Seller Info
   @Column({ default: "individual" })
   sellerType!: "individual" | "business";
 
@@ -90,11 +84,9 @@ export class Bulk {
   @Column({ nullable: true })
   sellerPhone?: string;
 
-  // 🔹 Media
   @Column("simple-array", { nullable: true })
   images?: string[];
 
-  // 🔹 Status / Meta
   @Column({ nullable: true })
   badgeType?: string;
 

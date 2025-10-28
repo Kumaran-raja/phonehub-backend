@@ -17,7 +17,6 @@ router.get("/:id", getFixedById);
 router.get("/seller/:phone", getFixedBySellerPhone);
 router.get("/fixedseller/:id", getFixedByUser);
 
-// protected
 router.post("/create", verifyToken, createFixedPrice);
 router.put("/:id", verifyToken, updateFixedPrice);
 router.delete("/:id", verifyToken, deleteFixedPrice);

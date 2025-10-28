@@ -11,11 +11,9 @@ import {
 
 const router = Router();
 
-// Public routes
 router.get("/", getAuctions);
 router.get("/:id", getAuctionById);
 
-// Protected routes
 router.post("/create", verifyToken, createAuction);
 router.put("/:id", verifyToken, updateAuction);
 router.delete("/:id", verifyToken, deleteAuction);

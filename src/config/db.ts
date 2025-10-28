@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Read DB details from .env
 const DB_ENGINE = process.env.DB_ENGINE?.toLowerCase();
 const DB_HOST = process.env.DB_HOST;
 const DB_PORT = Number(process.env.DB_PORT);
@@ -29,7 +28,6 @@ switch (DB_ENGINE) {
     throw new Error(`Unsupported DB_ENGINE: ${DB_ENGINE}`);
 }
 
-// Create TypeORM DataSource
 export const AppDataSource = new DataSource({
   type,
   host: DB_HOST,
@@ -42,7 +40,6 @@ export const AppDataSource = new DataSource({
   entities: [__dirname + "/../models/*.ts"],
 });
 
-// Function to connect DB
 export const connectDB = async () => {
   try {
     await AppDataSource.initialize();

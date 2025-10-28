@@ -8,7 +8,7 @@ const auctionRepo = AppDataSource.getRepository(Auction);
 const bidRepo = AppDataSource.getRepository(Bid);
 const userRepo = AppDataSource.getRepository(User);
 
-// 🟢 Create new auction
+// Create new auction
 export const createAuction = async (req: Request, res: Response) => {
   try {
     const { model, specs, startBid, duration } = req.body;

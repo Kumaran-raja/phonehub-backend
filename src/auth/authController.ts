@@ -8,7 +8,6 @@ import { sendOtpEmail } from "../utils/emailService";
 const SECRET = process.env.JWT_SECRET_KEY || "fallback_secret";
 const userRepo = AppDataSource.getRepository(User);
 
-// ===== SIGNUP =====
 export const signup = async (req: Request, res: Response) => {
   try {
     const {
@@ -22,7 +21,7 @@ export const signup = async (req: Request, res: Response) => {
       storeaddress,
     } = req.body;
 
-    // 🔹 Check for duplicates
+    //  Check for duplicates
     if (await userRepo.findOne({ where: { email } }))
       return res.status(400).json({ message: "Email already registered" });
 
@@ -32,25 +31,25 @@ export const signup = async (req: Request, res: Response) => {
     if (await userRepo.findOne({ where: { phone } }))
       return res.status(400).json({ message: "Phone already registered" });
 
-    // 🔹 Hash password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔹 Generate OTP for email verification
+    //  Generate OTP for email verification
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 🔹 Handle uploaded trade licence (only if business)
+    //  Handle uploaded trade licence (only if business)
     const tradelicence =
       req.file && sellertype === SellerType.BUSINESS
         ? `/uploads/licenses/${req.file.filename}`
         : "";
 
-    // 🔹 Determine correct seller type
+    //  Determine correct seller type
     let userType: SellerType;
     if (sellertype === SellerType.BUSINESS) userType = SellerType.BUSINESS;
     else if (sellertype === SellerType.BUYER) userType = SellerType.BUYER;
     else userType = SellerType.INDIVIDUAL;
 
-    // 🔹 Create new user
+    //  Create new user
     const newUser = userRepo.create({
       email,
       username,
@@ -67,7 +66,7 @@ export const signup = async (req: Request, res: Response) => {
 
     await userRepo.save(newUser);
 
-    // 🔹 Send verification email
+    //  Send verification email
     await sendOtpEmail(email, otp);
 
     res.status(201).json({
@@ -79,7 +78,7 @@ export const signup = async (req: Request, res: Response) => {
   }
 };
 
-// ===== VERIFY EMAIL =====
+// Email verification
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
@@ -103,7 +102,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
   }
 };
 
-// ===== LOGIN =====
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
