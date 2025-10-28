@@ -27,6 +27,9 @@ export class FixedPrice {
   @Column()
   variant!: string;
 
+ @Column()
+  badgeType!: string;
+
   @Column()
   price!: string;
 

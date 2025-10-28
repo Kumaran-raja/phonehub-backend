@@ -18,6 +18,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       price,
       specs,
       condition,
+      badgeType,
       location,
       description,
       images,
@@ -35,6 +36,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       price,
       specs: specs || null,
       condition,
+      badgeType,
       location,
       description: description || null,
       images: images || null,
@@ -163,6 +165,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       variant,
       price,
       specs,
+      badgeType,
       condition,
       location,
       description,
@@ -175,6 +178,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
     if (model) fixed.model = model;
     if (storage) fixed.storage = storage;
     if (variant) fixed.variant = variant;
+    if (badgeType) fixed.badgeType = badgeType;
     if (price) fixed.price = price;
     if (specs !== undefined) fixed.specs = specs;
     if (condition) fixed.condition = condition;
