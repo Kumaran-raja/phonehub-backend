@@ -3,11 +3,30 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../config/db";
 import { User } from "../models/userModel";
 import { Bulk } from "../models/BulkData";
-
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 const bulkRepo = AppDataSource.getRepository(Bulk);
 const userRepo = AppDataSource.getRepository(User);
 
+
+// ✅ Upload folder setup
+const uploadDir = path.join(__dirname, "../../uploads/bulk");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ✅ Multer config
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
+export const uploadBulk = multer({ storage });
 //  Create Bulk Listing (Protected)
+// ✅ Create Bulk Listing (Protected)
 export const createBulk = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
@@ -20,7 +39,6 @@ export const createBulk = async (req: Request, res: Response) => {
       condition,
       location,
       description,
-      images,
       sellerType,
       badgeType,
       badgeText,
@@ -34,7 +52,51 @@ export const createBulk = async (req: Request, res: Response) => {
       totalPrice,
     } = req.body;
 
-    //  Get seller info from JWT or DB
+    // ✅ handle uploaded images or fallback to body images
+    let images: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      images = (req.files as Express.Multer.File[]).map(
+        (file) => `/uploads/bulk/${file.filename}`
+      );
+    } else if (req.body.images) {
+      try {
+        images = JSON.parse(req.body.images);
+      } catch {
+        images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
+      }
+    }
+
+    // ✅ Parse pricingTiers correctly
+    let parsedPricingTiers: any[] = [];
+    if (Array.isArray(req.body.pricingTiers)) {
+      parsedPricingTiers = req.body.pricingTiers.map((t: any) => {
+        try {
+          return typeof t === "string" ? JSON.parse(t) : t;
+        } catch {
+          return t;
+        }
+      });
+    } else if (typeof req.body.pricingTiers === "string") {
+      try {
+        parsedPricingTiers = JSON.parse(req.body.pricingTiers);
+      } catch {
+        parsedPricingTiers = [];
+      }
+    }
+
+    // ✅ Parse bulkFeatures if it's sent as stringified JSON
+    let parsedBulkFeatures: any[] = [];
+    if (typeof bulkFeatures === "string") {
+      try {
+        parsedBulkFeatures = JSON.parse(bulkFeatures);
+      } catch {
+        parsedBulkFeatures = [];
+      }
+    } else if (Array.isArray(bulkFeatures)) {
+      parsedBulkFeatures = bulkFeatures;
+    }
+
+    // 🧠 Get seller info
     let sellerName =
       req.body.sellerName?.trim() ||
       decodedUser?.username ||
@@ -62,9 +124,9 @@ export const createBulk = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Seller name missing — please update your profile." });
 
-    //  Create new bulk listing
+    // ✅ Create new bulk listing
     const bulk = bulkRepo.create({
-      userId: decodedUser.id, //  link with logged-in user
+      userId: decodedUser.id,
       model,
       storage,
       variant,
@@ -73,7 +135,7 @@ export const createBulk = async (req: Request, res: Response) => {
       condition,
       location,
       description,
-      images: images || null,
+      images,
       sellerType: sellerType || decodedUser?.sellertype || "individual",
       sellerName,
       sellerPhone: sellerPhoneFinal || null,
@@ -83,26 +145,26 @@ export const createBulk = async (req: Request, res: Response) => {
       verified: false,
       moqType,
       customMoq,
-      pricingTiers,
-      bulkFeatures,
+      pricingTiers: parsedPricingTiers, // ✅ fixed here
+      bulkFeatures: parsedBulkFeatures, // ✅ also fixed
       quantity,
       unitPrice,
       totalPrice,
     });
 
     await bulkRepo.save(bulk);
-    res.status(201).json({ message: " Bulk listing created", bulk });
+    res.status(201).json({ message: "Bulk listing created", bulk });
   } catch (error: any) {
-    console.error(" Error creating bulk:", error);
-    res
-      .status(500)
-      .json({
-        message: "Server error",
-        error: error.message,
-        stack: error.stack,
-      });
+    console.error("Error creating bulk:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      stack: error.stack,
+    });
   }
 };
+
+
 
 
 export const getBulk = async (req: Request, res: Response) => {
