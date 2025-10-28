@@ -6,6 +6,7 @@ import { Bulk } from "../models/BulkData";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { ILike } from "typeorm";
 const bulkRepo = AppDataSource.getRepository(Bulk);
 const userRepo = AppDataSource.getRepository(User);
 
@@ -166,16 +167,43 @@ export const createBulk = async (req: Request, res: Response) => {
 
 export const getBulk = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit) || 10; // default 10
-    const skip = Number(req.query.skip) || 0;    // default 0
+    const limit = Number(req.query.limit) || 10;
+    const skip = Number(req.query.skip) || 0;
 
+    const {
+      storage,
+      sellerType,
+      city,
+      condition,
+      series,
+      sort, // "priceLowHigh", "priceHighLow", "ratingHighLow"
+    } = req.query;
+
+    // ✅ Build dynamic filters
+    const where: any = {};
+
+    if (storage) where.storage = ILike(`%${storage}%`);
+    if (sellerType) where.sellerType = String(sellerType);
+    if (city) where.location = ILike(`%${city}%`);
+    if (condition) where.condition = ILike(`%${condition}%`);
+    if (series) where.model = ILike(`%${series}%`);
+
+    // ✅ Handle sorting
+    let order: any = { createdAt: "DESC" }; // default
+    if (sort === "priceLowHigh") order = { totalPrice: "ASC" };
+    else if (sort === "priceHighLow") order = { totalPrice: "DESC" };
+    else if (sort === "ratingHighLow") order = { rating: "DESC" }; // optional, if you have rating
+
+    // ✅ Fetch data
     const [list, total] = await bulkRepo.findAndCount({
-      order: { createdAt: "DESC" },
+      where,
+      order,
       skip,
       take: limit,
     });
 
     res.json({
+      success: true,
       data: list,
       total,
       limit,
@@ -183,7 +211,7 @@ export const getBulk = async (req: Request, res: Response) => {
       hasMore: skip + limit < total,
     });
   } catch (error) {
-    console.error(" Error fetching bulk:", error);
+    console.error("Error fetching bulk:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
