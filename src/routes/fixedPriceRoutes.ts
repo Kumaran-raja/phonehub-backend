@@ -19,7 +19,8 @@ router.get("/seller/:phone", getFixedBySellerPhone);
 router.get("/fixedseller/:id", getFixedByUser);
 
 router.post("/create", verifyToken, upload.array("images", 5), createFixedPrice); // ✅ upload here
-router.put("/:id", verifyToken, updateFixedPrice);
+router.put("/:id", verifyToken, upload.array("images", 5), updateFixedPrice);
+
 router.delete("/:id", verifyToken, deleteFixedPrice);
 
 export default router;

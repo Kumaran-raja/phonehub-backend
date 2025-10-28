@@ -40,7 +40,7 @@ export const createAuction = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Get all auctions
+// Get all auctions
 export const getAuctions = async (_req: Request, res: Response) => {
   try {
     const auctions = await auctionRepo.find({ relations: ["bids"] });
@@ -85,7 +85,7 @@ export const getAuctions = async (_req: Request, res: Response) => {
   }
 };
 
-// 🟢 Get single auction by ID
+// Get single auction by ID
 export const getAuctionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -103,7 +103,7 @@ export const getAuctionById = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Update auction
+// Update auction
 export const updateAuction = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -137,7 +137,7 @@ export const updateAuction = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Delete auction
+// Delete auction
 export const deleteAuction = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -161,7 +161,7 @@ export const deleteAuction = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Place a bid
+// Place a bid
 export const placeBid = async (req: Request, res: Response) => {
   try {
     const { auctionId, bidAmount } = req.body;

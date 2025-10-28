@@ -5,6 +5,7 @@ import { User } from "../models/userModel";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
+import { Between, ILike } from "typeorm";
 
 const fixedRepo = AppDataSource.getRepository(FixedPrice);
 const userRepo = AppDataSource.getRepository(User);
@@ -14,7 +15,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ✅ Multer configuration
+// Multer configuration
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
@@ -50,7 +51,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
     const user = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // ✅ Handle uploaded images
+    // Handle uploaded images
     const imagePaths = req.files
       ? (req.files as Express.Multer.File[]).map(
           (file) => `/uploads/fixedprice/${file.filename}`
@@ -68,7 +69,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       badgeType,
       location,
       description: description || null,
-      images: imagePaths, // ✅ Save image paths here
+      images: imagePaths,
       sellerType: sellerType || user.sellertype,
       sellerName: user.username,
       sellerPhone: user.phone,
@@ -109,28 +110,66 @@ const getTimeAgo = (createdAt: Date): string => {
 };
 export const getFixedPrices = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit) || 10; 
-    const skip = Number(req.query.skip) || 0; 
+    const limit = Number(req.query.limit) || 10;
+    const skip = Number(req.query.skip) || 0;
 
-    const list = await fixedRepo.find({
-      order: { createdAt: "DESC" },
+    const {
+      storage,
+      sellerType,
+      city,
+      minPrice,
+      maxPrice,
+      condition,
+      series,
+      sort,
+    } = req.query;
+
+    // ✅ Build dynamic filter conditions
+    const where: any = {};
+
+    if (storage) where.storage = ILike(`%${storage}%`);
+    if (sellerType) where.sellerType = String(sellerType);
+    if (city) where.location = ILike(`%${city}%`);
+    if (condition) where.condition = String(condition);
+    if (series) where.model = ILike(`%${series}%`);
+
+    // ✅ Handle price filters (assuming `price` is stored as number in DB)
+    if (minPrice || maxPrice) {
+      const min = Number(minPrice) || 0;
+      const max = Number(maxPrice) || 9999999;
+      where.price = Between(min, max);
+    }
+
+    // ✅ Sorting options
+    let order: any = { createdAt: "DESC" }; // default
+    if (sort === "priceLowHigh") order = { price: "ASC" };
+    else if (sort === "priceHighLow") order = { price: "DESC" };
+    else if (sort === "ratingHighLow") order = { rating: "DESC" };
+
+    // ✅ Fetch filtered data
+    const [list, total] = await fixedRepo.findAndCount({
+      where,
+      order,
       take: limit,
-      skip,        
+      skip,
     });
 
+    // ✅ Add postedAgo field
     const withTimeAgo = list.map((item) => ({
       ...item,
       postedAgo: getTimeAgo(item.createdAt),
     }));
 
-    res.json({ data: withTimeAgo }); // return inside "data" key
+    res.json({
+      success: true,
+      total,
+      data: withTimeAgo,
+    });
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 export const getFixedByUser = async (req: Request, res: Response) => {
   try {
@@ -176,58 +215,98 @@ export const getFixedBySellerPhone = async (req: Request, res: Response) => {
 export const updateFixedPrice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
     const decodedUser = (req as any).user;
+
+    if (!decodedUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const fixed = await fixedRepo.findOne({ where: { id: Number(id) } });
-    if (!fixed) return res.status(404).json({ message: "Not found" });
+    if (!fixed) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
 
-    const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
-    if (!seller) return res.status(404).json({ message: "Seller not found" });
+    const user = await userRepo.findOne({ where: { id: decodedUser.id } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Only allow the same seller to update
     if (
-      fixed.sellerName !== seller.username &&
-      fixed.sellerPhone !== seller.phone
-    )
+      fixed.sellerName !== user.username &&
+      fixed.sellerPhone !== user.phone
+    ) {
       return res.status(403).json({ message: "Unauthorized" });
+    }
 
+    // Handle new uploaded images (if any)
+    let newImages: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      newImages = (req.files as Express.Multer.File[]).map(
+        (file) => `/uploads/fixedprice/${file.filename}`
+      );
+    }
+
+    // Merge with existing images if desired
+    const existingImages = fixed.images || [];
+    const updatedImages = [...existingImages, ...newImages];
+
+    // Extract form fields
     const {
       model,
       storage,
       variant,
-      price,
       old,
+      price,
       specs,
-      badgeType,
       condition,
+      badgeType,
       location,
       description,
-      images,
       sellerType,
-      sellerPhone,
+      batteryHealth,
       verified,
     } = req.body;
 
-    if (model) fixed.model = model;
-    if (storage) fixed.storage = storage;
-    if (variant) fixed.variant = variant;
-    if (old) fixed.old = old;
-    if (badgeType) fixed.badgeType = badgeType;
-    if (price) fixed.price = price;
-    if (specs !== undefined) fixed.specs = specs;
-    if (condition) fixed.condition = condition;
-    if (location) fixed.location = location;
-    if (description !== undefined) fixed.description = description;
-    if (images !== undefined) fixed.images = images;
-    if (sellerType) fixed.sellerType = sellerType;
-    if (sellerPhone) fixed.sellerPhone = sellerPhone;
-    if (verified !== undefined) fixed.verified = Boolean(verified);
+    // Update fields (fall back to previous values)
+    fixed.model = model || fixed.model;
+    fixed.storage = storage || fixed.storage;
+    fixed.variant = variant || fixed.variant;
+    fixed.old = old || fixed.old;
+    fixed.price = price || fixed.price;
+    fixed.specs = specs || fixed.specs;
+    fixed.condition = condition || fixed.condition;
+    fixed.badgeType = badgeType || fixed.badgeType;
+    fixed.location = location || fixed.location;
+    fixed.description = description || fixed.description;
+    fixed.images = updatedImages.length > 0 ? updatedImages : fixed.images;
+    fixed.sellerType = sellerType || fixed.sellerType;
+    fixed.sellerName = user.username;
+    fixed.sellerPhone = user.phone;
+    fixed.batteryHealth = batteryHealth || fixed.batteryHealth;
+    fixed.verified =
+      verified !== undefined ? Boolean(verified) : fixed.verified;
 
     await fixedRepo.save(fixed);
-    res.json({ message: "Updated", fixed });
+
+    res.json({
+      message: "Fixed price listing updated successfully",
+      fixed,
+    });
   } catch (error) {
-    console.error("Error updating fixed:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error updating fixed price:", error);
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Server error",
+        error: error.message,
+        stack: error.stack,
+      });
+    } else {
+      res.status(500).json({ message: "Unknown server error" });
+    }
   }
 };
+
 
 export const deleteFixedPrice = async (req: Request, res: Response) => {
   try {

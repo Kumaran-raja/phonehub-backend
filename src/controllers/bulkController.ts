@@ -10,13 +10,13 @@ const bulkRepo = AppDataSource.getRepository(Bulk);
 const userRepo = AppDataSource.getRepository(User);
 
 
-// ✅ Upload folder setup
+//  Upload folder setup
 const uploadDir = path.join(__dirname, "../../uploads/bulk");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ✅ Multer config
+//  Multer config
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 });
 export const uploadBulk = multer({ storage });
 //  Create Bulk Listing (Protected)
-// ✅ Create Bulk Listing (Protected)
+//  Create Bulk Listing (Protected)
 export const createBulk = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
@@ -164,9 +164,6 @@ export const createBulk = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
 export const getBulk = async (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 10; // default 10
@@ -205,7 +202,7 @@ export const getBulkById = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ Update Bulk Listing (Protected)
+//  Update Bulk Listing (Protected)
 export const updateBulk = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -217,21 +214,117 @@ export const updateBulk = async (req: Request, res: Response) => {
     const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!seller) return res.status(404).json({ message: "Seller not found" });
 
+    // ✅ Authorization check
     if (
       bulk.sellerName !== seller.username &&
       bulk.sellerPhone !== seller.phone
-    )
+    ) {
       return res.status(403).json({ message: "Unauthorized" });
+    }
 
-    Object.assign(bulk, req.body);
+    // ✅ Handle uploaded images
+    let newImages: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      newImages = (req.files as Express.Multer.File[]).map(
+        (file) => `/uploads/bulk/${file.filename}`
+      );
+    }
+
+    // ✅ Handle existing images (from client)
+    let existingImages: string[] = [];
+    if (req.body.existingImages) {
+      try {
+        existingImages = JSON.parse(req.body.existingImages);
+      } catch {
+        existingImages = Array.isArray(req.body.existingImages)
+          ? req.body.existingImages
+          : [req.body.existingImages];
+      }
+    }
+
+    // ✅ Merge images
+    const finalImages = [...existingImages, ...newImages];
+
+    // ✅ Parse pricingTiers if present
+    let parsedPricingTiers: any[] = [];
+    if (req.body.pricingTiers) {
+      if (Array.isArray(req.body.pricingTiers)) {
+        parsedPricingTiers = req.body.pricingTiers.map((t: any) => {
+          try {
+            return typeof t === "string" ? JSON.parse(t) : t;
+          } catch {
+            return t;
+          }
+        });
+      } else if (typeof req.body.pricingTiers === "string") {
+        try {
+          parsedPricingTiers = JSON.parse(req.body.pricingTiers);
+        } catch {
+          parsedPricingTiers = [];
+        }
+      }
+    }
+
+    // ✅ Parse bulkFeatures if present
+    let parsedBulkFeatures: any[] = [];
+    if (req.body.bulkFeatures) {
+      if (typeof req.body.bulkFeatures === "string") {
+        try {
+          parsedBulkFeatures = JSON.parse(req.body.bulkFeatures);
+        } catch {
+          parsedBulkFeatures = [];
+        }
+      } else if (Array.isArray(req.body.bulkFeatures)) {
+        parsedBulkFeatures = req.body.bulkFeatures;
+      }
+    }
+
+    // ✅ Exclude fields that should NOT be overwritten
+    const {
+      id: _ignoreId,
+      userId: _ignoreUserId,
+      createdAt: _ignoreCreatedAt,
+      updatedAt: _ignoreUpdatedAt,
+      verified: _ignoreVerified,
+      ...updatableFields
+    } = req.body;
+
+    // ✅ Safely update only allowed fields
+    Object.assign(bulk, {
+      ...updatableFields,
+      images: finalImages.length ? finalImages : bulk.images,
+      pricingTiers:
+        parsedPricingTiers.length > 0
+          ? parsedPricingTiers
+          : bulk.pricingTiers,
+      bulkFeatures:
+        parsedBulkFeatures.length > 0
+          ? parsedBulkFeatures
+          : bulk.bulkFeatures,
+    });
+
     await bulkRepo.save(bulk);
 
-    res.json({ message: "Bulk updated", bulk });
+    res.json({ message: "Bulk listing updated successfully", bulk });
   } catch (error) {
     console.error("Error updating bulk:", error);
-    res.status(500).json({ message: "Server error" });
+
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Server error",
+        error: error.message,
+        stack: error.stack,
+      });
+    } else {
+      res.status(500).json({
+        message: "Unknown server error",
+        error,
+      });
+    }
   }
 };
+
+
 
 //  Delete Bulk Listing (Protected)
 export const deleteBulk = async (req: Request, res: Response) => {
