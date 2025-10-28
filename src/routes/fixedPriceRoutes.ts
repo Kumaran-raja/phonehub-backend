@@ -7,6 +7,7 @@ import {
   updateFixedPrice,
   deleteFixedPrice,
   getFixedByUser,
+  upload, // 👈 import multer upload from controller
 } from "../controllers/fixedPriceController";
 import { verifyToken } from "../auth/middleware";
 
@@ -17,7 +18,7 @@ router.get("/:id", getFixedById);
 router.get("/seller/:phone", getFixedBySellerPhone);
 router.get("/fixedseller/:id", getFixedByUser);
 
-router.post("/create", verifyToken, createFixedPrice);
+router.post("/create", verifyToken, upload.array("images", 5), createFixedPrice); // ✅ upload here
 router.put("/:id", verifyToken, updateFixedPrice);
 router.delete("/:id", verifyToken, deleteFixedPrice);
 

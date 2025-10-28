@@ -2,14 +2,35 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../config/db";
 import { FixedPrice } from "../models/FixedPrice";
 import { User } from "../models/userModel";
+import path from "path";
+import multer from "multer";
+import fs from "fs";
 
 const fixedRepo = AppDataSource.getRepository(FixedPrice);
 const userRepo = AppDataSource.getRepository(User);
 
+const uploadDir = path.join(__dirname, "../../uploads/fixedprice");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ✅ Multer configuration
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
+
+export const upload = multer({ storage });
 // Create fixed-price listing (protected)
 export const createFixedPrice = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
+    if (!decodedUser) return res.status(401).json({ message: "Unauthorized" });
 
     const {
       model,
@@ -22,13 +43,19 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       badgeType,
       location,
       description,
-      images,
       sellerType,
       batteryHealth,
     } = req.body;
 
     const user = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // ✅ Handle uploaded images
+    const imagePaths = req.files
+      ? (req.files as Express.Multer.File[]).map(
+          (file) => `/uploads/fixedprice/${file.filename}`
+        )
+      : [];
 
     const fixed = fixedRepo.create({
       model,
@@ -41,7 +68,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       badgeType,
       location,
       description: description || null,
-      images: images || null,
+      images: imagePaths, // ✅ Save image paths here
       sellerType: sellerType || user.sellertype,
       sellerName: user.username,
       sellerPhone: user.phone,
@@ -54,7 +81,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
     await fixedRepo.save(fixed);
 
     res.status(201).json({
-      message: " Fixed price created successfully",
+      message: "Fixed price created successfully",
       fixed,
     });
   } catch (error) {
@@ -62,6 +89,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getTimeAgo = (createdAt: Date): string => {
   const now = new Date();
