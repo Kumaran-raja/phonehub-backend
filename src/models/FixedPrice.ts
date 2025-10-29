@@ -60,6 +60,9 @@ export class FixedPrice {
   @Column({ type: "varchar", length: 255 })
   sellerName!: string;
 
+  @Column({ type: "varchar", length: 255 })
+  sellerEmail!: string;
+
   @Column({ type: "varchar", length: 50, nullable: true })
   sellerPhone!: string | null;
 

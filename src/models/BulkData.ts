@@ -84,6 +84,9 @@ export class Bulk {
   @Column({ nullable: true })
   sellerPhone?: string;
 
+   @Column({ nullable: true })
+  sellerEmail?: string;
+
   @Column("simple-array", { nullable: true })
   images?: string[];
 

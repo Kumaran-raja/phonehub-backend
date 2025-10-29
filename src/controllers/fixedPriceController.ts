@@ -45,6 +45,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       location,
       description,
       sellerType,
+      sellerEmail,
       batteryHealth,
     } = req.body;
 
@@ -73,6 +74,7 @@ export const createFixedPrice = async (req: Request, res: Response) => {
       sellerType: sellerType || user.sellertype,
       sellerName: user.username,
       sellerPhone: user.phone,
+      sellerEmail: sellerEmail,
       batteryHealth: batteryHealth || null,
       verified: false,
       user,
