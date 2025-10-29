@@ -271,7 +271,20 @@ export const updateBulk = async (req: Request, res: Response) => {
     }
 
     // ✅ Merge images
-    const finalImages = [...existingImages, ...newImages];
+    // ✅ Final images = keep only those explicitly sent from frontend + new uploads
+const finalImages = [
+  ...(Array.isArray(existingImages) ? existingImages : []),
+  ...(Array.isArray(newImages) ? newImages : []),
+];
+
+// ✅ Remove deleted images from DB (optional file deletion from disk)
+bulk.images?.forEach((imgPath) => {
+  if (!finalImages.includes(imgPath)) {
+    const fullPath = path.join(__dirname, "../../", imgPath);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); // delete old file
+  }
+});
+
 
     // ✅ Parse pricingTiers if present
     let parsedPricingTiers: any[] = [];

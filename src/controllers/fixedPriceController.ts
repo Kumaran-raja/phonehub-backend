@@ -212,6 +212,7 @@ export const getFixedBySellerPhone = async (req: Request, res: Response) => {
   }
 };
 
+
 export const updateFixedPrice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -231,7 +232,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Only allow the same seller to update
+    // ✅ Authorization check
     if (
       fixed.sellerName !== user.username &&
       fixed.sellerPhone !== user.phone
@@ -239,7 +240,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // Handle new uploaded images (if any)
+    // ✅ Handle uploaded images (new files)
     let newImages: string[] = [];
     if (req.files && Array.isArray(req.files)) {
       newImages = (req.files as Express.Multer.File[]).map(
@@ -247,11 +248,39 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       );
     }
 
-    // Merge with existing images if desired
-    const existingImages = fixed.images || [];
-    const updatedImages = [...existingImages, ...newImages];
+    // ✅ Handle existing images (from frontend)
+    let existingImages: string[] = [];
+    if (req.body.existingImages) {
+      try {
+        existingImages = JSON.parse(req.body.existingImages);
+      } catch {
+        existingImages = Array.isArray(req.body.existingImages)
+          ? req.body.existingImages
+          : [req.body.existingImages];
+      }
+    }
 
-    // Extract form fields
+    // ✅ Final image list = remaining + new uploads
+    const finalImages = [
+      ...(Array.isArray(existingImages) ? existingImages : []),
+      ...(Array.isArray(newImages) ? newImages : []),
+    ];
+
+    // ✅ Remove deleted images from disk
+    fixed.images?.forEach((imgPath) => {
+      if (!finalImages.includes(imgPath)) {
+        const fullPath = path.join(__dirname, "../../", imgPath);
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.unlinkSync(fullPath);
+          } catch (err) {
+            console.warn("Failed to delete old image:", err);
+          }
+        }
+      }
+    });
+
+    // ✅ Extract form fields
     const {
       model,
       storage,
@@ -268,7 +297,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       verified,
     } = req.body;
 
-    // Update fields (fall back to previous values)
+    // ✅ Update fields safely
     fixed.model = model || fixed.model;
     fixed.storage = storage || fixed.storage;
     fixed.variant = variant || fixed.variant;
@@ -279,7 +308,7 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
     fixed.badgeType = badgeType || fixed.badgeType;
     fixed.location = location || fixed.location;
     fixed.description = description || fixed.description;
-    fixed.images = updatedImages.length > 0 ? updatedImages : fixed.images;
+    fixed.images = finalImages.length ? finalImages : fixed.images;
     fixed.sellerType = sellerType || fixed.sellerType;
     fixed.sellerName = user.username;
     fixed.sellerPhone = user.phone;
@@ -302,11 +331,10 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
         stack: error.stack,
       });
     } else {
-      res.status(500).json({ message: "Unknown server error" });
+      res.status(500).json({ message: "Unknown server error", error });
     }
   }
 };
-
 
 export const deleteFixedPrice = async (req: Request, res: Response) => {
   try {
