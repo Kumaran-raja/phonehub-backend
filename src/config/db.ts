@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -34,11 +35,11 @@ export const AppDataSource = new DataSource({
   username: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  synchronize: false, // true only in dev if you want auto table creation
+  synchronize: false,
   logging: ["error"],
-  entities: [__dirname + "/../models/*.ts"],
+  entities: [path.join(__dirname, "../models/**/*.{ts,js}")],
 
-  // 👇 Add this part to allow SSL (Coolify requires it for external MySQL)
+  // SSL for Coolify or cloud MySQL
   ssl:
     type === "mysql"
       ? { rejectUnauthorized: false }
