@@ -11,7 +11,6 @@ const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
 const DB_NAME = process.env.DB_NAME;
 
-// Determine TypeORM type
 let type: "mysql" | "mariadb" | "postgres";
 switch (DB_ENGINE) {
   case "mysql":
@@ -35,9 +34,15 @@ export const AppDataSource = new DataSource({
   username: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  synchronize: false, // ⚠️ Only for dev; use migrations in production make this true create all table automatically
+  synchronize: false, // true only in dev if you want auto table creation
   logging: ["error"],
   entities: [__dirname + "/../models/*.ts"],
+
+  // 👇 Add this part to allow SSL (Coolify requires it for external MySQL)
+  ssl:
+    type === "mysql"
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
 export const connectDB = async () => {
