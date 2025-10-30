@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signup, login, verifyOtp } from "../auth/authController";
+import { signup, login, verifyOtp, forgotPassword, verifyResetOtp, resetPassword } from "../auth/authController";
 import { verifyToken } from "../auth/middleware";
 import { tokenBlocklist } from "../auth/tokenBlocklist";
 import { AppDataSource } from "../config/db";
@@ -55,7 +55,7 @@ router.get("/me", verifyToken, async (req, res) => {
         "sellertype",
         "storename",
         "storeaddress",
-        "tradelicence",
+        // "tradelicence",
       ],
     });
 
@@ -109,13 +109,13 @@ router.put(
         user.storeaddress = storeaddress || user.storeaddress;
 
         // ✅ If a file is uploaded, store its relative path
-        if (req.file) {
-          user.tradelicence = `/uploads/licenses/${req.file.filename}`;
-        }
+        // if (req.file) {
+        //   user.tradelicence = `/uploads/licenses/${req.file.filename}`;
+        // }
       } else {
         user.storename = "";
         user.storeaddress = "";
-        user.tradelicence = "";
+        // user.tradelicence = "";
       }
 
       await userRepo.save(user);
@@ -129,4 +129,8 @@ router.put(
   }
 );
 
+
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-reset-otp", verifyResetOtp);
+router.post("/reset-password", resetPassword);
 export default router;

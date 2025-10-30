@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
-const allowedOrigins = ["http://168.231.122.150:3000"];
+const allowedOrigins = ["http://168.231.122.150:3000","http://127.0.0.1:5173/","http://localhost:5173"];
 
 app.use(
   cors({

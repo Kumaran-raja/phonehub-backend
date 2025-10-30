@@ -38,10 +38,10 @@ export const signup = async (req: Request, res: Response) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     //  Handle uploaded trade licence (only if business)
-    const tradelicence =
-      req.file && sellertype === SellerType.BUSINESS
-        ? `/uploads/licenses/${req.file.filename}`
-        : "";
+    // const tradelicence =
+    //   req.file && sellertype === SellerType.BUSINESS
+    //     ? `/uploads/licenses/${req.file.filename}`
+    //     : "";
 
     //  Determine correct seller type
     let userType: SellerType;
@@ -59,7 +59,7 @@ export const signup = async (req: Request, res: Response) => {
       sellertype: userType,
       storename: userType === SellerType.BUSINESS ? storename || "" : "",
       storeaddress: userType === SellerType.BUSINESS ? storeaddress || "" : "",
-      tradelicence,
+      // tradelicence,
       emailOtp: otp,
       isVerified: false,
     });
@@ -127,6 +127,90 @@ export const login = async (req: Request, res: Response) => {
     res.json({ token });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetOtp = otp;
+    user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins validity
+
+    await userRepo.save(user);
+
+    // Send OTP email
+    await sendOtpEmail(email, otp);
+
+    res.json({
+      message: "OTP sent to your email for password reset",
+    });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * Verify OTP - Step 2: Confirm OTP before reset
+ */
+export const verifyResetOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.resetOtp || user.resetOtp !== otp)
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    if (user.resetOtpExpires && user.resetOtpExpires < new Date())
+      return res.status(400).json({ message: "OTP expired" });
+
+    // OTP verified — allow user to reset password
+    res.json({ message: "OTP verified successfully. You can now reset password." });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * Reset Password - Step 3: Update password
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const user = await userRepo.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.resetOtp || user.resetOtp !== otp)
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    if (user.resetOtpExpires && user.resetOtpExpires < new Date())
+      return res.status(400).json({ message: "OTP expired" });
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    user.resetOtp = null;
+    user.resetOtpExpires = null;
+
+    await userRepo.save(user);
+
+    res.json({ message: "Password reset successful. You can now login." });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
