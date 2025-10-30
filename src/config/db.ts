@@ -35,7 +35,7 @@ export const AppDataSource = new DataSource({
   username: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  synchronize: true,
+  synchronize: false,
   logging: ["error"],
   entities: [path.join(__dirname, "../models/**/*.{ts,js}")],
 
