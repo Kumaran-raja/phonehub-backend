@@ -1,50 +1,59 @@
 import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import "reflect-metadata";
+
 import authRoutes from "./routes/authRoutes";
 import auctionRoutes from "./routes/auctionRoutes";
 import fixedPriceRoutes from "./routes/fixedPriceRoutes";
-import { AppDataSource, connectDB } from "./config/db";
 import bulkRoutes from "./routes/bulkRoutes";
 
-import "reflect-metadata";
-import path from "path";
+import { AppDataSource, connectDB } from "./config/db";
 import { User } from "./models/userModel";
 import { FixedPrice } from "./models/FixedPrice";
 import { Bulk } from "./models/BulkData";
+import { autoDeleteUnverifiedUsers } from "./utils/autoDeleteUnverifiedUsers"; // ✅ import cleanup function
+
 dotenv.config();
+
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
+
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
-const allowedOrigins = ["http://168.231.122.150:3000","http://127.0.0.1:5173/","http://localhost:5173"];
+const allowedOrigins = [
+  "http://168.231.122.150:3000",
+  "http://127.0.0.1:5173/",
+  "http://localhost:5173",
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow Postman or server-to-server
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
     },
-    credentials: true, // allows cookies / Authorization headers
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-connectDB();
+connectDB().then(async () => {
+  console.log("🕒 Starting auto-delete for unverified users...");
 
-// Routes
+  await autoDeleteUnverifiedUsers();
+
+  setInterval(autoDeleteUnverifiedUsers, 10 * 60 * 1000);
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/auction", auctionRoutes);
 app.use("/api/fixedprice", fixedPriceRoutes);
-
 app.use("/api/bulk", bulkRoutes);
-
 
 app.get("/api/stats", async (req, res) => {
   try {
@@ -69,7 +78,6 @@ app.get("/api/stats", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch statistics" });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
