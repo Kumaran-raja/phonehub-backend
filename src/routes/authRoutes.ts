@@ -13,13 +13,11 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// Create uploads directory if not exists
 const uploadDir = path.join(__dirname, "../../uploads/licenses");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Setup multer storage
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
@@ -32,7 +30,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Public
 router.post("/signup", upload.single("tradelicence"), signup);
 router.post("/login", login);
 router.post("/verify-otp", verifyOtp);
@@ -108,7 +105,6 @@ router.put(
         user.storename = storename || user.storename;
         user.storeaddress = storeaddress || user.storeaddress;
 
-        // ✅ If a file is uploaded, store its relative path
         // if (req.file) {
         //   user.tradelicence = `/uploads/licenses/${req.file.filename}`;
         // }

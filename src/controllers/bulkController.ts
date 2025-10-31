@@ -1,4 +1,3 @@
-// src/controllers/bulkController.ts
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/db";
 import { User } from "../models/userModel";
@@ -11,13 +10,11 @@ const bulkRepo = AppDataSource.getRepository(Bulk);
 const userRepo = AppDataSource.getRepository(User);
 
 
-//  Upload folder setup
 const uploadDir = path.join(__dirname, "../../uploads/bulk");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-//  Multer config
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
@@ -26,8 +23,6 @@ const storage = multer.diskStorage({
   },
 });
 export const uploadBulk = multer({ storage });
-//  Create Bulk Listing (Protected)
-//  Create Bulk Listing (Protected)
 export const createBulk = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
@@ -54,7 +49,6 @@ export const createBulk = async (req: Request, res: Response) => {
       totalPrice,
     } = req.body;
 
-    // ✅ handle uploaded images or fallback to body images
     let images: string[] = [];
     if (req.files && Array.isArray(req.files)) {
       images = (req.files as Express.Multer.File[]).map(
@@ -68,7 +62,6 @@ export const createBulk = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Parse pricingTiers correctly
     let parsedPricingTiers: any[] = [];
     if (Array.isArray(req.body.pricingTiers)) {
       parsedPricingTiers = req.body.pricingTiers.map((t: any) => {
@@ -86,7 +79,6 @@ export const createBulk = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Parse bulkFeatures if it's sent as stringified JSON
     let parsedBulkFeatures: any[] = [];
     if (typeof bulkFeatures === "string") {
       try {
@@ -98,7 +90,6 @@ export const createBulk = async (req: Request, res: Response) => {
       parsedBulkFeatures = bulkFeatures;
     }
 
-    // 🧠 Get seller info
     let sellerName =
       req.body.sellerName?.trim() ||
       decodedUser?.username ||
@@ -126,7 +117,6 @@ export const createBulk = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Seller name missing — please update your profile." });
 
-    // ✅ Create new bulk listing
     const bulk = bulkRepo.create({
       userId: decodedUser.id,
       model,
@@ -178,10 +168,9 @@ export const getBulk = async (req: Request, res: Response) => {
       city,
       condition,
       series,
-      sort, // "priceLowHigh", "priceHighLow", "ratingHighLow"
+      sort, 
     } = req.query;
 
-    // ✅ Build dynamic filters
     const where: any = {};
 
     if (storage) where.storage = ILike(`%${storage}%`);
@@ -190,13 +179,11 @@ export const getBulk = async (req: Request, res: Response) => {
     if (condition) where.condition = ILike(`%${condition}%`);
     if (series) where.model = ILike(`%${series}%`);
 
-    // ✅ Handle sorting
     let order: any = { createdAt: "DESC" }; // default
     if (sort === "priceLowHigh") order = { totalPrice: "ASC" };
     else if (sort === "priceHighLow") order = { totalPrice: "DESC" };
     else if (sort === "ratingHighLow") order = { rating: "DESC" }; // optional, if you have rating
 
-    // ✅ Fetch data
     const [list, total] = await bulkRepo.findAndCount({
       where,
       order,
@@ -219,7 +206,6 @@ export const getBulk = async (req: Request, res: Response) => {
 };
 
 
-//  Get Bulk Listing by ID
 export const getBulkById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -232,7 +218,6 @@ export const getBulkById = async (req: Request, res: Response) => {
   }
 };
 
-//  Update Bulk Listing (Protected)
 export const updateBulk = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -244,7 +229,6 @@ export const updateBulk = async (req: Request, res: Response) => {
     const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!seller) return res.status(404).json({ message: "Seller not found" });
 
-    // ✅ Authorization check
     if (
       bulk.sellerName !== seller.username &&
       bulk.sellerPhone !== seller.phone
@@ -252,7 +236,6 @@ export const updateBulk = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // ✅ Handle uploaded images
     let newImages: string[] = [];
     if (req.files && Array.isArray(req.files)) {
       newImages = (req.files as Express.Multer.File[]).map(
@@ -260,7 +243,6 @@ export const updateBulk = async (req: Request, res: Response) => {
       );
     }
 
-    // ✅ Handle existing images (from client)
     let existingImages: string[] = [];
     if (req.body.existingImages) {
       try {
@@ -385,7 +367,6 @@ export const getLatestBulk = async (req: Request, res: Response) => {
   }
 };
 
-//  Delete Bulk Listing (Protected)
 export const deleteBulk = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

@@ -39,7 +39,6 @@ export const AppDataSource = new DataSource({
   logging: ["error"],
   entities: [path.join(__dirname, "../models/**/*.{ts,js}")],
 
-  // SSL for Coolify or cloud MySQL
   ssl:
     type === "mysql"
       ? { rejectUnauthorized: false }
@@ -49,9 +48,9 @@ export const AppDataSource = new DataSource({
 export const connectDB = async () => {
   try {
     await AppDataSource.initialize();
-    console.log(`✅ Connected to ${DB_ENGINE} database`);
+    console.log(`Connected to ${DB_ENGINE} database`);
   } catch (error) {
-    console.error(`❌ Failed to connect to ${DB_ENGINE}`, error);
+    console.error(`Failed to connect to ${DB_ENGINE}`, error);
     process.exit(1);
   }
 };

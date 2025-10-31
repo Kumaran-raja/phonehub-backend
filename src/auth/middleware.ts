@@ -11,7 +11,6 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   const token = authHeader.split(" ")[1];
   if (!token) return res.status(403).json({ message: "Token malformed" });
 
-  // Check if token is invalidated
   if (tokenBlocklist.has(token)) return res.status(401).json({ message: "Token invalidated" });
 
   jwt.verify(token, SECRET, (err, decoded) => {
@@ -21,7 +20,6 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   });
 };
 
-// Role-based middleware
 export const requireRoles = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;

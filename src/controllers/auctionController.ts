@@ -8,7 +8,6 @@ const auctionRepo = AppDataSource.getRepository(Auction);
 const bidRepo = AppDataSource.getRepository(Bid);
 const userRepo = AppDataSource.getRepository(User);
 
-// Create new auction
 export const createAuction = async (req: Request, res: Response) => {
   try {
     const { model, specs, startBid, duration } = req.body;
@@ -40,7 +39,6 @@ export const createAuction = async (req: Request, res: Response) => {
   }
 };
 
-// Get all auctions
 export const getAuctions = async (_req: Request, res: Response) => {
   try {
     const auctions = await auctionRepo.find({ relations: ["bids"] });
@@ -85,7 +83,6 @@ export const getAuctions = async (_req: Request, res: Response) => {
   }
 };
 
-// Get single auction by ID
 export const getAuctionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -103,7 +100,6 @@ export const getAuctionById = async (req: Request, res: Response) => {
   }
 };
 
-// Update auction
 export const updateAuction = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -115,7 +111,6 @@ export const updateAuction = async (req: Request, res: Response) => {
     const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!seller) return res.status(404).json({ message: "Seller not found" });
 
-    // only owner can update
     if (auction.sellerName !== seller.username)
       return res.status(403).json({ message: "Unauthorized to update this auction" });
 
@@ -137,7 +132,6 @@ export const updateAuction = async (req: Request, res: Response) => {
   }
 };
 
-// Delete auction
 export const deleteAuction = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -149,7 +143,6 @@ export const deleteAuction = async (req: Request, res: Response) => {
     const seller = await userRepo.findOne({ where: { id: decodedUser.id } });
     if (!seller) return res.status(404).json({ message: "Seller not found" });
 
-    // only owner can delete
     if (auction.sellerName !== seller.username)
       return res.status(403).json({ message: "Unauthorized to delete this auction" });
 
@@ -161,7 +154,6 @@ export const deleteAuction = async (req: Request, res: Response) => {
   }
 };
 
-// Place a bid
 export const placeBid = async (req: Request, res: Response) => {
   try {
     const { auctionId, bidAmount } = req.body;

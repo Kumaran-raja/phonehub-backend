@@ -69,7 +69,6 @@ export class FixedPrice {
   @Column({ type: "boolean", default: false })
   verified!: boolean;
 
-  // ✅ Relation with User
   @ManyToOne(() => User, (user) => user.fixedPrices, { onDelete: "CASCADE" })
   @JoinColumn({ name: "userId" })
   user!: User;

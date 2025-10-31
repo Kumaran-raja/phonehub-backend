@@ -3,9 +3,6 @@ import { User } from "../models/userModel";
 
 const userRepo = AppDataSource.getRepository(User);
 
-/**
- * Automatically remove unverified users whose OTP expired > 10 min ago.
- */
 export const autoDeleteUnverifiedUsers = async () => {
   const now = new Date();
 

@@ -1,4 +1,3 @@
-// src/routes/bulkRoutes.ts
 import { Router } from "express";
 import {
   createBulk,

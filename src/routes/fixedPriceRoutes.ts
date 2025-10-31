@@ -8,7 +8,7 @@ import {
   deleteFixedPrice,
   getFixedByUser,
   upload,
-  getLatestFixedPrices, // 👈 import multer upload from controller
+  getLatestFixedPrices,
 } from "../controllers/fixedPriceController";
 import { verifyToken } from "../auth/middleware";
 

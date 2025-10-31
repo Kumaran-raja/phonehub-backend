@@ -1,4 +1,3 @@
-// src/utils/sendEmail.ts
 import nodemailer from "nodemailer";
 
 export const sendOtpEmail = async (to: string, otp: string) => {
