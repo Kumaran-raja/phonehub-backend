@@ -7,7 +7,8 @@ import {
   updateFixedPrice,
   deleteFixedPrice,
   getFixedByUser,
-  upload, // 👈 import multer upload from controller
+  upload,
+  getLatestFixedPrices, // 👈 import multer upload from controller
 } from "../controllers/fixedPriceController";
 import { verifyToken } from "../auth/middleware";
 
@@ -22,5 +23,5 @@ router.post("/create", verifyToken, upload.array("images", 5), createFixedPrice)
 router.put("/:id", verifyToken, upload.array("images", 5), updateFixedPrice);
 
 router.delete("/:id", verifyToken, deleteFixedPrice);
-
+router.get("/latest", getLatestFixedPrices);
 export default router;

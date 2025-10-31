@@ -27,7 +27,6 @@ const storage = multer.diskStorage({
 });
 
 export const upload = multer({ storage });
-// Create fixed-price listing (protected)
 export const createFixedPrice = async (req: Request, res: Response) => {
   try {
     const decodedUser = (req as any).user;
@@ -126,7 +125,6 @@ export const getFixedPrices = async (req: Request, res: Response) => {
       sort,
     } = req.query;
 
-    // ✅ Build dynamic filter conditions
     const where: any = {};
 
     if (storage) where.storage = ILike(`%${storage}%`);
@@ -135,20 +133,17 @@ export const getFixedPrices = async (req: Request, res: Response) => {
     if (condition) where.condition = String(condition);
     if (series) where.model = ILike(`%${series}%`);
 
-    // ✅ Handle price filters (assuming `price` is stored as number in DB)
     if (minPrice || maxPrice) {
       const min = Number(minPrice) || 0;
       const max = Number(maxPrice) || 9999999;
       where.price = Between(min, max);
     }
 
-    // ✅ Sorting options
     let order: any = { createdAt: "DESC" }; // default
     if (sort === "priceLowHigh") order = { price: "ASC" };
     else if (sort === "priceHighLow") order = { price: "DESC" };
     else if (sort === "ratingHighLow") order = { rating: "DESC" };
 
-    // ✅ Fetch filtered data
     const [list, total] = await fixedRepo.findAndCount({
       where,
       order,
@@ -156,7 +151,6 @@ export const getFixedPrices = async (req: Request, res: Response) => {
       skip,
     });
 
-    // ✅ Add postedAgo field
     const withTimeAgo = list.map((item) => ({
       ...item,
       postedAgo: getTimeAgo(item.createdAt),
@@ -169,6 +163,34 @@ export const getFixedPrices = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching fixed prices:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const getLatestFixedPrices = async (req: Request, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 10; // default limit = 10
+    const skip = Number(req.query.skip) || 0;
+
+    const [list, total] = await fixedRepo.findAndCount({
+      order: { createdAt: "DESC" }, // latest first
+      take: limit,
+      skip,
+    });
+
+    const withTimeAgo = list.map((item) => ({
+      ...item,
+      postedAgo: getTimeAgo(item.createdAt),
+    }));
+
+    res.json({
+      success: true,
+      total,
+      data: withTimeAgo,
+    });
+  } catch (error) {
+    console.error("Error fetching latest fixed prices:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

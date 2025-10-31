@@ -7,7 +7,6 @@ import { sendOtpEmail } from "../utils/emailService";
 
 const SECRET = process.env.JWT_SECRET_KEY || "fallback_secret";
 const userRepo = AppDataSource.getRepository(User);
-
 export const signup = async (req: Request, res: Response) => {
   try {
     const {
@@ -21,6 +20,22 @@ export const signup = async (req: Request, res: Response) => {
       storeaddress,
     } = req.body;
 
+    // Clean up any expired, unverified users for this email
+    const existingUser = await userRepo.findOne({ where: { email } });
+    if (existingUser && !existingUser.isVerified) {
+      const now = new Date();
+      if (
+        existingUser.emailOtpExpires &&
+        existingUser.emailOtpExpires < now
+      ) {
+        await userRepo.remove(existingUser);
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Please try again after 10 minutes." });
+      }
+    }
+
     //  Check for duplicates
     if (await userRepo.findOne({ where: { email } }))
       return res.status(400).json({ message: "Email already registered" });
@@ -31,25 +46,14 @@ export const signup = async (req: Request, res: Response) => {
     if (await userRepo.findOne({ where: { phone } }))
       return res.status(400).json({ message: "Phone already registered" });
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    //  Generate OTP for email verification
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    //  Handle uploaded trade licence (only if business)
-    // const tradelicence =
-    //   req.file && sellertype === SellerType.BUSINESS
-    //     ? `/uploads/licenses/${req.file.filename}`
-    //     : "";
-
-    //  Determine correct seller type
     let userType: SellerType;
     if (sellertype === SellerType.BUSINESS) userType = SellerType.BUSINESS;
     else if (sellertype === SellerType.BUYER) userType = SellerType.BUYER;
     else userType = SellerType.INDIVIDUAL;
 
-    //  Create new user
     const newUser = userRepo.create({
       email,
       username,
@@ -59,18 +63,18 @@ export const signup = async (req: Request, res: Response) => {
       sellertype: userType,
       storename: userType === SellerType.BUSINESS ? storename || "" : "",
       storeaddress: userType === SellerType.BUSINESS ? storeaddress || "" : "",
-      // tradelicence,
       emailOtp: otp,
+      emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
       isVerified: false,
     });
 
     await userRepo.save(newUser);
 
-    //  Send verification email
     await sendOtpEmail(email, otp);
 
     res.status(201).json({
-      message: "User registered successfully. Please check your email for OTP.",
+      message:
+        "User registered successfully. Please check your email for OTP (valid for 10 minutes).",
     });
   } catch (error) {
     console.error("Signup Error:", error);
@@ -82,19 +86,29 @@ export const signup = async (req: Request, res: Response) => {
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-
     const user = await userRepo.findOne({ where: { email } });
+
     if (!user) return res.status(400).json({ message: "User not found" });
     if (user.isVerified)
       return res.status(400).json({ message: "User already verified" });
+
+    const now = new Date();
+    if (!user.emailOtpExpires || user.emailOtpExpires < now) {
+      // OTP expired → remove user
+      await userRepo.remove(user);
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please register again after 10 minutes." });
+    }
 
     if (user.emailOtp !== otp)
       return res.status(400).json({ message: "Invalid OTP" });
 
     user.isVerified = true;
     user.emailOtp = null;
-    await userRepo.save(user);
+    user.emailOtpExpires = null;
 
+    await userRepo.save(user);
     res.json({ message: "Email verified successfully! You can now login." });
   } catch (error) {
     console.error(error);

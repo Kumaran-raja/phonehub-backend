@@ -272,14 +272,11 @@ export const updateBulk = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Merge images
-    // ✅ Final images = keep only those explicitly sent from frontend + new uploads
 const finalImages = [
   ...(Array.isArray(existingImages) ? existingImages : []),
   ...(Array.isArray(newImages) ? newImages : []),
 ];
 
-// ✅ Remove deleted images from DB (optional file deletion from disk)
 bulk.images?.forEach((imgPath) => {
   if (!finalImages.includes(imgPath)) {
     const fullPath = path.join(__dirname, "../../", imgPath);
@@ -288,7 +285,6 @@ bulk.images?.forEach((imgPath) => {
 });
 
 
-    // ✅ Parse pricingTiers if present
     let parsedPricingTiers: any[] = [];
     if (req.body.pricingTiers) {
       if (Array.isArray(req.body.pricingTiers)) {
@@ -308,7 +304,6 @@ bulk.images?.forEach((imgPath) => {
       }
     }
 
-    // ✅ Parse bulkFeatures if present
     let parsedBulkFeatures: any[] = [];
     if (req.body.bulkFeatures) {
       if (typeof req.body.bulkFeatures === "string") {
@@ -322,7 +317,6 @@ bulk.images?.forEach((imgPath) => {
       }
     }
 
-    // ✅ Exclude fields that should NOT be overwritten
     const {
       id: _ignoreId,
       userId: _ignoreUserId,
@@ -332,7 +326,6 @@ bulk.images?.forEach((imgPath) => {
       ...updatableFields
     } = req.body;
 
-    // ✅ Safely update only allowed fields
     Object.assign(bulk, {
       ...updatableFields,
       images: finalImages.length ? finalImages : bulk.images,
@@ -367,7 +360,30 @@ bulk.images?.forEach((imgPath) => {
   }
 };
 
+export const getLatestBulk = async (req: Request, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const skip = Number(req.query.skip) || 0;
 
+    const [list, total] = await bulkRepo.findAndCount({
+      order: { createdAt: "DESC" },
+      take: limit,
+      skip,
+    });
+
+    res.json({
+      success: true,
+      total,
+      limit,
+      skip,
+      hasMore: skip + limit < total,
+      data: list,
+    });
+  } catch (error) {
+    console.error("Error fetching latest bulk listings:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 //  Delete Bulk Listing (Protected)
 export const deleteBulk = async (req: Request, res: Response) => {

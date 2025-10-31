@@ -50,6 +50,9 @@ export class User {
   @Column({ type: "varchar", length: 6, nullable: true })
   emailOtp!: string | null;
 
+  @Column({ type: "datetime", nullable: true })
+  emailOtpExpires!: Date | null;
+
   @Column({ type: "varchar", length: 6, nullable: true })
   resetOtp!: string | null;
 
