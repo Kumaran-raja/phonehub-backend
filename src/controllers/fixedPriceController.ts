@@ -255,7 +255,6 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Authorization check
     if (
       fixed.sellerName !== user.username &&
       fixed.sellerPhone !== user.phone
@@ -263,7 +262,6 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // ✅ Handle uploaded images (new files)
     let newImages: string[] = [];
     if (req.files && Array.isArray(req.files)) {
       newImages = (req.files as Express.Multer.File[]).map(
@@ -271,7 +269,6 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       );
     }
 
-    // ✅ Handle existing images (from frontend)
     let existingImages: string[] = [];
     if (req.body.existingImages) {
       try {
@@ -283,13 +280,11 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Final image list = remaining + new uploads
     const finalImages = [
       ...(Array.isArray(existingImages) ? existingImages : []),
       ...(Array.isArray(newImages) ? newImages : []),
     ];
 
-    // ✅ Remove deleted images from disk
     fixed.images?.forEach((imgPath) => {
       if (!finalImages.includes(imgPath)) {
         const fullPath = path.join(__dirname, "../../", imgPath);
@@ -303,7 +298,6 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       }
     });
 
-    // ✅ Extract form fields
     const {
       model,
       storage,
@@ -320,7 +314,6 @@ export const updateFixedPrice = async (req: Request, res: Response) => {
       verified,
     } = req.body;
 
-    // ✅ Update fields safely
     fixed.model = model || fixed.model;
     fixed.storage = storage || fixed.storage;
     fixed.variant = variant || fixed.variant;

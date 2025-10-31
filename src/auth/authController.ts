@@ -65,7 +65,7 @@ export const signup = async (req: Request, res: Response) => {
 
     await userRepo.save(newUser);
 
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp, "signup");
 
     res.status(201).json({
       message:
@@ -153,7 +153,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     await userRepo.save(user);
 
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp, "forgotPassword");
 
     res.json({
       message: "OTP sent to your email for password reset",
