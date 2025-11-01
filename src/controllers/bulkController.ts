@@ -157,19 +157,13 @@ export const createBulk = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getBulk = async (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const skip = Number(req.query.skip) || 0;
 
-    const {
-      storage,
-      sellerType,
-      city,
-      condition,
-      series,
-      sort, 
-    } = req.query;
+    const { storage, sellerType, city, condition, series, sort } = req.query;
 
     const where: any = {};
 
@@ -179,21 +173,55 @@ export const getBulk = async (req: Request, res: Response) => {
     if (condition) where.condition = ILike(`%${condition}%`);
     if (series) where.model = ILike(`%${series}%`);
 
-    let order: any = { createdAt: "DESC" }; // default
+    let order: any = { createdAt: "DESC" };
     if (sort === "priceLowHigh") order = { totalPrice: "ASC" };
     else if (sort === "priceHighLow") order = { totalPrice: "DESC" };
-    else if (sort === "ratingHighLow") order = { rating: "DESC" }; // optional, if you have rating
+    else if (sort === "ratingHighLow") order = { rating: "DESC" };
 
     const [list, total] = await bulkRepo.findAndCount({
       where,
       order,
       skip,
       take: limit,
+      relations: ["user"], 
+      select: {
+        id: true,
+        model: true,
+        storage: true,
+        condition: true,
+        price: true,
+        totalPrice: true,
+        quantity: true,
+        unitPrice: true,
+        images: true,
+        sellerType: true,
+        sellerName: true,
+        location: true,
+        rating: true,
+        verified: true,
+        variant: true,
+        createdAt: true,
+        user: {
+          email: true,
+          phone: true,
+          storename: true,
+        },
+      },
     });
+
+    // ✅ Optional: simplify response (attach user details directly)
+    const formattedList = list.map(({ user, ...bulk }) => ({
+      ...bulk,
+      user: {
+        email: user?.email || null,
+        phone: user?.phone || null,
+        storename: user?.storename || null,
+      },
+    }));
 
     res.json({
       success: true,
-      data: list,
+      data: formattedList,
       total,
       limit,
       skip,
