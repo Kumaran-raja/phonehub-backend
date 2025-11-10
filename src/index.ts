@@ -1,4 +1,4 @@
-import express, { Application, Request, Response, NextFunction } from "express";
+import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
@@ -13,60 +13,48 @@ import { AppDataSource, connectDB } from "./config/db";
 import { User } from "./models/userModel";
 import { FixedPrice } from "./models/FixedPrice";
 import { Bulk } from "./models/BulkData";
-import { autoDeleteUnverifiedUsers } from "./utils/autoDeleteUnverifiedUsers";
+import { autoDeleteUnverifiedUsers } from "./utils/autoDeleteUnverifiedUsers"; // ✅ import cleanup function
 
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Allowed origins
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use(express.json());
+
 const allowedOrigins = [
-  "https://jazzy-meerkat-7f46d1.netlify.app",
+  "https://jazzy-meerkat-7f46d1.netlify.app/",
   "http://localhost:5173",
 ];
 
-// ✅ Apply CORS globally FIRST — with fallback for Render proxy
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigins[0]); // fallback for Render
-  }
+  
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  // ✅ Always handle preflight requests before anything else
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
-
-app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-// ✅ Connect to DB
 connectDB().then(async () => {
-  console.log("Starting auto-delete for unverified users...");
+  console.log("🕒 Starting auto-delete for unverified users...");
+
   await autoDeleteUnverifiedUsers();
+
   setInterval(autoDeleteUnverifiedUsers, 10 * 60 * 1000);
 });
 
-// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auction", auctionRoutes);
 app.use("/api/fixedprice", fixedPriceRoutes);
 app.use("/api/bulk", bulkRoutes);
 
-// ✅ Example stats route
 app.get("/api/stats", async (req, res) => {
   try {
     const userRepo = AppDataSource.getRepository(User);
@@ -91,11 +79,6 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
-// ✅ Add root route for testing CORS directly
-app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "Server running 🚀 with full CORS enabled" });
-});
-
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
