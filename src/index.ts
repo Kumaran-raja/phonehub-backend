@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
@@ -13,59 +13,54 @@ import { AppDataSource, connectDB } from "./config/db";
 import { User } from "./models/userModel";
 import { FixedPrice } from "./models/FixedPrice";
 import { Bulk } from "./models/BulkData";
-import { autoDeleteUnverifiedUsers } from "./utils/autoDeleteUnverifiedUsers"; // ✅ import cleanup function
+import { autoDeleteUnverifiedUsers } from "./utils/autoDeleteUnverifiedUsers";
 
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
+// ✅ Allowed origins
 const allowedOrigins = [
-  "https://jazzy-meerkat-7f46d1.netlify.app", // frontend
-  "https://phonehub-backend-cqep.onrender.com", // backend (Render)
-  "http://localhost:5173", // local dev
+  "https://jazzy-meerkat-7f46d1.netlify.app",
+  "http://localhost:5173",
 ];
 
-app.use((req, res, next) => {
+// ✅ Apply CORS globally FIRST
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
+
+  // ✅ Handle OPTIONS preflight right here
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
   next();
 });
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn("❌ Blocked by CORS:", origin);
-        callback(null, false); // important — don't throw error
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
-
-app.options("*", cors());
-
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-
+// ✅ Connect to DB
 connectDB().then(async () => {
   console.log("Starting auto-delete for unverified users...");
-
   await autoDeleteUnverifiedUsers();
-
   setInterval(autoDeleteUnverifiedUsers, 10 * 60 * 1000);
 });
 
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auction", auctionRoutes);
 app.use("/api/fixedprice", fixedPriceRoutes);
 app.use("/api/bulk", bulkRoutes);
 
+// ✅ Example stats route
 app.get("/api/stats", async (req, res) => {
   try {
     const userRepo = AppDataSource.getRepository(User);
@@ -91,5 +86,5 @@ app.get("/api/stats", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
