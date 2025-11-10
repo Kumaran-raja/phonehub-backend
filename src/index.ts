@@ -24,7 +24,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
 const allowedOrigins = [
-  "https://phonehub1.netlify.app/",
+  "https://phonehub1.netlify.app",
   "http://localhost:5173",
 ];
 
