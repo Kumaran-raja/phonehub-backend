@@ -26,17 +26,23 @@ const allowedOrigins = [
   "http://localhost:5173",
 ];
 
-// ✅ Apply CORS globally FIRST
+// ✅ Apply CORS globally FIRST — with fallback for Render proxy
 app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigins[0]); // fallback for Render
   }
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
 
-  // ✅ Handle OPTIONS preflight right here
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  // ✅ Always handle preflight requests before anything else
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
@@ -83,6 +89,11 @@ app.get("/api/stats", async (req, res) => {
     console.error("Error fetching stats:", error);
     res.status(500).json({ message: "Failed to fetch statistics" });
   }
+});
+
+// ✅ Add root route for testing CORS directly
+app.get("/", (req: Request, res: Response) => {
+  res.json({ message: "Server running 🚀 with full CORS enabled" });
 });
 
 app.listen(PORT, () => {
