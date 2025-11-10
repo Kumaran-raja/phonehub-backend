@@ -20,8 +20,6 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use(express.json());
 
 const allowedOrigins = [
   "https://jazzy-meerkat-7f46d1.netlify.app",
@@ -41,6 +39,12 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
+
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use(express.json());
+
 
 connectDB().then(async () => {
   console.log("Starting auto-delete for unverified users...");
