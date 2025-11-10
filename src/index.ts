@@ -24,7 +24,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
 const allowedOrigins = [
-  "https://jazzy-meerkat-7f46d1.netlify.app/",
+  "https://jazzy-meerkat-7f46d1.netlify.app",
   "http://localhost:5173",
 ];
 
@@ -43,7 +43,7 @@ app.use(
 );
 
 connectDB().then(async () => {
-  console.log("🕒 Starting auto-delete for unverified users...");
+  console.log("Starting auto-delete for unverified users...");
 
   await autoDeleteUnverifiedUsers();
 
@@ -80,5 +80,5 @@ app.get("/api/stats", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(` Server running on http://localhost:${PORT}`);
 });
