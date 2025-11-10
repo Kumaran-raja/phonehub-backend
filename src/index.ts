@@ -23,15 +23,10 @@ const PORT = process.env.PORT || 5000;
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 
-// const allowedOrigins = [
-//   "http://168.231.122.150:3000",
-//   "http://127.0.0.1:5173/",
-//   "http://localhost:5173",
-// ];
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : [];
+const allowedOrigins = [
+  "https://jazzy-meerkat-7f46d1.netlify.app/",
+  "http://localhost:5173",
+];
 
   
 app.use(
