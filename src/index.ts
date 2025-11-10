@@ -42,6 +42,8 @@ app.use(
   })
 );
 
+app.options("*", cors());
+
 connectDB().then(async () => {
   console.log("🕒 Starting auto-delete for unverified users...");
 
