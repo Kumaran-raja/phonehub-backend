@@ -20,23 +20,30 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-
 const allowedOrigins = [
-  "https://jazzy-meerkat-7f46d1.netlify.app",
-  "http://localhost:5173",
+  "https://jazzy-meerkat-7f46d1.netlify.app", // frontend
+  "https://phonehub-backend-cqep.onrender.com", // backend (Render)
+  "http://localhost:5173", // local dev
 ];
 
-  
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) callback(null, true);
-      else callback(new Error("Not allowed by CORS"));
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn("❌ Blocked by CORS:", origin);
+        callback(null, false); // important — don't throw error
+      }
     },
-    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
